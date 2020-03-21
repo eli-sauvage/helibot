@@ -4,10 +4,6 @@ const testpl = require("./testpl");
 var bodyParser = require("body-parser");
 class exp {
   init(members, poll, appDirName) {
-    const http = require("http");
-    setInterval(() => {
-      http.get("http://botdiscordv2.glitch.me/");
-    }, 250000);
     const app = express();
     app.use(express.static("public"));
     app.use(bodyParser.json()); // to support JSON-encoded bodies
@@ -39,9 +35,6 @@ class exp {
     app.post("/poll", (req, res) => {
       poll.newPoll(req.body.quest, req.body.rep, req.body.every);
     });
-    setInterval(() => {
-      http.get("http://discordbotv2.glitch.me/");
-    }, 1000);
     const listener = app.listen(process.env.PORT, function() {
       console.log("Your app is listening on port " + listener.address().port);
     });

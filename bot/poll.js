@@ -47,11 +47,11 @@ class exp {
     var msg = new discord.RichEmbed()
       .setColor("#0099ff")
       .setTitle("Sondage")
-      .setURL("https://discordbotv2.glitch.me/poll")
+      .setURL("https://murmuring-dawn-90139.herokuapp.com/poll")
       .setAuthor("helibot","https://images-na.ssl-images-amazon.com/images/I/615Q1Ms%2Bb4L._SX425_.jpg")
       .setDescription(q)
       .setTimestamp()
-      .setFooter("https://discordbotv2.glitch.me/poll")
+      .setFooter("https://murmuring-dawn-90139.herokuapp.com/poll")
     var i = 0;
     r.forEach(e => {
       msg.addField(e, reacts[i], true);
