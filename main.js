@@ -19,13 +19,12 @@ var up = function(client, guild,fs,fetch) {
 };
 
 client.on("ready", function() {
-  console.log("démarré")
   guild = client.guilds.find(e => e.id == "532956456492728320");
   scoreChannel = guild.channels
     .array()
     .find(e => e.name === "classement_points");
   members = start.load(guild);
-  express.init(members, poll);
+  express.init(members, poll, __dirname);
   logsChannel = guild.channels.array().find(e => e.name === "bot_logs");
   logs.init(logsChannel, poll);
   logs.start();
@@ -37,7 +36,6 @@ client.on("ready", function() {
     .then(e =>
       e.forEach(m => {
         m.delete();
-        console.log("message supprimé");
       })
     );
   pollChannel.fetchMessages({ limit: 100 });
@@ -54,7 +52,7 @@ client.on("ready", function() {
   }, 43200000);
   setInterval(()=>sendScores().catch(), 3000)
   //setInterval(()=>save.saveOrdi(members),5000)
-  setInterval(()=>{guild.channels.find("name","bothistoriquev2").send(makeEmbed(members))},300000)
+  setInterval(()=>{guild.channels.find(e=>e.name=="bothistoriquev2").send(makeEmbed(members))},300000)
 });
 
 client.on("message", msg => {}); 

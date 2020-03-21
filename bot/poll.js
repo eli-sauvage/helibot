@@ -40,7 +40,6 @@ var testDouble = function(arr){
 class exp {
   init(c, d) {
     channel = c;
-    console.log(reacts.length);
     discord = d;
   }
   newPoll(q, r, m) {

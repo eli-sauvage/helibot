@@ -3,7 +3,7 @@ const http = require("http");
 const testpl = require("./testpl");
 var bodyParser = require("body-parser");
 class exp {
-  init(members, poll) {
+  init(members, poll, appDirName) {
     const http = require("http");
     setInterval(() => {
       http.get("http://botdiscordv2.glitch.me/");
@@ -18,7 +18,7 @@ class exp {
       })
     );
     app.get("/", function(request, response) {
-      response.sendFile("/app/views/index.html");
+      response.sendFile(appDirName + "/public/scores.html");
       console.log("req")
     });
     app.get("/memb", function(request, response) {
@@ -29,11 +29,12 @@ class exp {
       });
       response.send(rep);
     });
-    app.get("/points", (req, res) => {
-      res.sendFile("/app/views/categoriesPtCool.html");
-    });
+    // app.get("/points", (req, res) => {
+    //   res.sendFile("/app/views/categoriesPtCool.html");
+    // });
     app.get("/poll", (req, res) => {
-      res.sendFile("/app/views/poll.html");
+      res.sendFile(appDirName + "/public/poll.html");
+      console.log("poll req")
     });
     app.post("/poll", (req, res) => {
       poll.newPoll(req.body.quest, req.body.rep, req.body.every);
