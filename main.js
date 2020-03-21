@@ -1,5 +1,5 @@
 const roles = require("./bot/roles"),
-  testpl = require("./bot/testpl"),
+  testpl = require("./bot/testpl"), 
   save = require("./bot/save"),
   makeEmbed = require("./bot/makeEmbed"),
   logs = require("./bot/logs"),
