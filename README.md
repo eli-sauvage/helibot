@@ -1,5 +1,5 @@
 # helibot
-a simple discord bot that counts points : 1 minute in a vocal channel = 1 point
+A simple discord bot that counts points : 1 minute in a vocal channel = 1 point
 
 hosted on heroku
 
