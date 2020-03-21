@@ -12,8 +12,8 @@ module.exports = function (members) {
       "Helibot",
       "https://images-na.ssl-images-amazon.com/images/I/615Q1Ms%2Bb4L._SX425_.jpg"
     )
-    .setTitle("https://murmuring-dawn-90139.herokuapp.com (pour tous les scores)")
-    .setURL("https://murmuring-dawn-90139.herokuapp.com")
+    .setTitle("https://helibot.herokuapp.com (pour tous les scores)")
+    .setURL("https://helibot.herokuapp.com")
     .setColor(0)
     .setDescription("scores des 15 premiers :")
     .addBlankField(true);
