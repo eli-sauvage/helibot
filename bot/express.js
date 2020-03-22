@@ -37,7 +37,7 @@ class exp {
       poll.newPoll(req.body.quest, req.body.rep, req.body.every);
     });
     app.post("/gitchange",(req,res)=>{
-      shell.exec("~/test.sh")
+      shell.exec("bash ~/test.sh")
       res.send("")
     })
     const listener = app.listen(2832, function() {
