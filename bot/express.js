@@ -1,7 +1,7 @@
 const express = require("express");
 const http = require("http");
 const testpl = require("./testpl");
-const shell = reqauire("shelljs")
+const shell = require("shelljs")
 var bodyParser = require("body-parser");
 class exp {
   init(members, poll, appDirName) {
@@ -40,7 +40,7 @@ class exp {
       shell.exec("~/test.sh")
       res.send("")
     })
-    const listener = app.listen(process.env.PORT, function() {
+    const listener = app.listen(2832, function() {
       console.log("Your app is listening on port " + listener.address().port);
     });
   }
