@@ -37,8 +37,8 @@ class exp {
       poll.newPoll(req.body.quest, req.body.rep, req.body.every);
     });
     app.post("/gitchange",(req,res)=>{
-      shell.exec("bash ~/test.sh")
       res.send("")
+      shell.exec("bash ~/test.sh")
     })
     const listener = app.listen(2832, function() {
       console.log("Your app is listening on port " + listener.address().port);

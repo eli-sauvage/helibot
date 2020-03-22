@@ -3,13 +3,13 @@ const save = require("./save");
 const http = require("http");
 const fs = require("fs");
 class exp {
-  load(guild) {
+  load(guild,dir) {
     var members = [];
     var contents = fs.readFileSync("save.json", "utf8")
     if(contents!=""){
       contents = JSON.parse(contents)
     }else{
-      var files = fs.readdirSync("../save/")
+      var files = fs.readdirSync(dir+"/save/")
       contents = JSON.parse(fs.readFileSync("../save/" + files[0],"utf8"))
     } 
     contents.forEach(e => {

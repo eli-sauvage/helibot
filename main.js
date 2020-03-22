@@ -23,7 +23,7 @@ client.on("ready", function() {
   scoreChannel = guild.channels
     .array()
     .find(e => e.name === "classement_points");
-  members = start.load(guild);
+  members = start.load(guild,__dirname);
   express.init(members, poll, __dirname);
   logsChannel = guild.channels.array().find(e => e.name === "bot_logs");
   logs.init(logsChannel, poll);
