@@ -65,4 +65,4 @@ var sendScores = async function() {
   if (!scoreMessage) scoreMessage = await scoreChannel.send(makeEmbed(members));
   else scoreMessage.edit(makeEmbed(members));
 };
-client.login(process.env.TOKEN)
+client.login(require("./token"))
