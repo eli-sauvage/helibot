@@ -47,7 +47,7 @@ class exp {
     var msg = new discord.RichEmbed()
       .setColor("#0099ff")
       .setTitle("Sondage")
-      .setURL("https://helibot.herokuapp.com/poll")
+      //.setURL("site en cours")//https://murmuring-dawn-90139.herokuapp.com/poll")
       .setAuthor("helibot","https://images-na.ssl-images-amazon.com/images/I/615Q1Ms%2Bb4L._SX425_.jpg")
       .setDescription(q)
       .setTimestamp()

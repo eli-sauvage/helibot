@@ -1,5 +1,5 @@
 const roles = require("./bot/roles"),
-  testpl = require("./bot/testpl"),
+  testpl = require("./bot/testpl"), 
   save = require("./bot/save"),
   makeEmbed = require("./bot/makeEmbed"),
   logs = require("./bot/logs"),
@@ -51,7 +51,7 @@ client.on("ready", function() {
     logs.historique(members).catch();
   }, 43200000);
   setInterval(()=>sendScores().catch(), 3000)
-  //setInterval(()=>save.saveOrdi(members),5000)
+  //setInterval(()=>save.saveOrdi(members),5000) 
   setInterval(()=>{guild.channels.find(e=>e.name=="bothistoriquev2").send(makeEmbed(members))},300000)
 });
 
@@ -65,4 +65,4 @@ var sendScores = async function() {
   if (!scoreMessage) scoreMessage = await scoreChannel.send(makeEmbed(members));
   else scoreMessage.edit(makeEmbed(members));
 };
-client.login(process.env.TOKEN)
+client.login(require("./token"))
