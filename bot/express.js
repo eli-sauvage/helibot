@@ -1,6 +1,7 @@
 const express = require("express");
 const http = require("http");
 const testpl = require("./testpl");
+const shell = reqauire("shelljs")
 var bodyParser = require("body-parser");
 class exp {
   init(members, poll, appDirName) {
@@ -35,6 +36,10 @@ class exp {
     app.post("/poll", (req, res) => {
       poll.newPoll(req.body.quest, req.body.rep, req.body.every);
     });
+    app.post("/gitchange",(req,res)=>{
+      shell.exec("~/test.sh")
+      res.send("")
+    })
     const listener = app.listen(process.env.PORT, function() {
       console.log("Your app is listening on port " + listener.address().port);
     });
