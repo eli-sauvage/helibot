@@ -25,8 +25,5 @@ module.exports = function (members) {
   for(let i=3;i<15;i++){
     embed.addField("**#"+(i+1)+"**" + members[i].name + ":","**" + Math.round(members[i].score) + "**",true)
   }
-  embed.addBlankField(true)
-  embed.addField("**#15**" + members[15].name + ":","**" + Math.round(members[15].score) + "**",true)
-  embed.addBlankField(true)
   return embed;
 }
