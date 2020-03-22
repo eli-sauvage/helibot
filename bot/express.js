@@ -38,6 +38,7 @@ class exp {
     });
     app.post("/gitchange",(req,res)=>{
       res.send("")
+      listener.close()
       shell.exec("bash ~/test.sh")
     })
     const listener = app.listen(2832, function() {
