@@ -10,7 +10,7 @@ class exp {
       contents = JSON.parse(contents)
     }else{
       var files = fs.readdirSync(dir+"/save/")
-      contents = JSON.parse(fs.readFileSync("../save/" + files[0],"utf8"))
+      contents = JSON.parse(fs.readFileSync(dir + "/save/" + files[0],"utf8"))
     } 
     contents.forEach(e => {
       if (
