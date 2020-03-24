@@ -42,6 +42,9 @@ class exp {
       shell.exec("bash ~/startbot.sh")
       process.exit()
     })
+    app.get("/ping",(req,res)=>{
+      res.send("");
+    })
     const listener = app.listen(2832, function() {
       console.log("Your app is listening on port " + listener.address().port);
     });
