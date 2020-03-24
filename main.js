@@ -44,7 +44,7 @@ client.on("ready", function() {
   roles.up(members);
   //logs.historique(members)
   setInterval(() => roles.up(members), 20000);
-  setInterval(() => save.savefile(members), 300000);
+  setInterval(() => save.savefile(members), 60000);
   setInterval(() => { 
      save.saveFileHistorique(members);
    }, 30000);
