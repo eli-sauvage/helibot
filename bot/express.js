@@ -39,8 +39,8 @@ class exp {
     app.post("/gitchange",(req,res)=>{
       res.send("")
       listener.close()
-      process.exit();
       shell.exec("bash ~/startbot.sh")
+      process.exit()
     })
     const listener = app.listen(2832, function() {
       console.log("Your app is listening on port " + listener.address().port);
