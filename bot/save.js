@@ -26,7 +26,6 @@ class exp {
         if (err) throw err;
       }
     );
-    console.log("saved");
   }
   saveFileHistorique(members) {
     fs.readdir("./save/", function(err, fichiers) {
