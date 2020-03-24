@@ -19,7 +19,7 @@ var up = function(client, guild,fs,fetch) {
 };
 
 client.on("ready", function() {
-  console.log("salut a tous")
+  console.log("yop")
   guild = client.guilds.find(e => e.id == "532956456492728320");
   scoreChannel = guild.channels
     .array()
