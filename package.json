@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "main": "main.js",
   "scripts": {
-    "start": "node main.js --trace-warnings"
+    "start": "node --trace-warnings main.js"
   },
   "dependencies": {
     "body-parser": "^1.19.0",
