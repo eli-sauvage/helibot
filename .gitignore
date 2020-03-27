@@ -1,1 +1,4 @@
 .env 
+token.js
+node_modules/
+package.lock.json
