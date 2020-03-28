@@ -5,7 +5,7 @@ const fs = require("fs");
 class exp {
   load(guild,dir) {
     var members = [];
-    var contents = fs.readFileSync("./save.json", "utf8")
+    var contents = fs.readFileSync(dir + "/save.json", "utf8")
     if(contents!=""){
       contents = JSON.parse(contents)
     }else{
