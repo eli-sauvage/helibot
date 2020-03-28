@@ -9,7 +9,7 @@ const fs = require("fs")
 class exp {
   init(members, poll, appDirName) {
     const app = express();
-    https.createServer({
+    var server = https.createServer({
       key : fs.readFileSync(appDirName + "/ssl/key.pem"),
       cert : fs.readFileSync(appDirName + "/ssl/cert.pem")
     },app).listen(2832,()=>console.log("listening"))
@@ -46,7 +46,7 @@ class exp {
     });
     app.post("/gitchange",(req,res)=>{
       res.send("")
-      listener.close()
+      server.close()
       shell.exec("bash ~/startbot.sh")
       process.exit()
     })
