@@ -45,9 +45,9 @@ client.on("ready", function() {
   //logs.historique(members)
   setInterval(() => roles.up(members), 20000);
   setInterval(() => save.savefile(members), 60000);
-  setInterval(() => { 
+  setInterval(() => {
      save.saveFileHistorique(members,__dirname);
-   }, 30000);
+  }, 30000);
   setInterval(() => { 
     logs.historique(members).catch();
   }, 43200000);

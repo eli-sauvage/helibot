@@ -51,7 +51,7 @@ class exp {
       .setAuthor("helibot","https://images-na.ssl-images-amazon.com/images/I/615Q1Ms%2Bb4L._SX425_.jpg")
       .setDescription(q)
       .setTimestamp()
-      .setFooter("https://helibot.herokuapp.com/poll")
+      .setFooter("http://helibot.biz.uz")
     var i = 0;
     r.forEach(e => {
       msg.addField(e, reacts[i], true);
