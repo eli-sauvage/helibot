@@ -2,3 +2,5 @@
 token.js
 node_modules/
 package.lock.json
+save.json
+save/
