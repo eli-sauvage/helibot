@@ -47,6 +47,7 @@ class exp {
         return
       }
       poll.newPoll(req.body.quest, req.body.rep, req.body.every);
+      res.send("")
     });
     app.post("/gitchange",(req,res)=>{
       res.send("")

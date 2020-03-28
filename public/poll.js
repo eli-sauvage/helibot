@@ -43,14 +43,15 @@ submit.addEventListener("click", () => {
     e => e.value
   );
   if ((question == "" || rep.includes(""))) return;
-  console.log("req")
-  fetch("https://77.151.84.172:2832/poll", {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ quest: question, rep: rep, every : document.getElementById("mention").checked })
-  }).then(e=>console.log("ui"));
-  console.log(question,rep)
+  console.log(JSON.stringify({ quest: question, rep: rep, every : document.getElementById("mention").checked }))
+  // console.log("req")
+  // fetch("https://77.151.84.172:2832/poll", {
+  //   method: "POST",
+  //   headers: {
+  //     Accept: "application/json",
+  //     "Content-Type": "application/json"
+  //   },
+  //   body: JSON.stringify({ quest: question, rep: rep, every : document.getElementById("mention").checked })
+  // }).then(e=>console.log("ui"));
+  // console.log(question,rep)
 });
