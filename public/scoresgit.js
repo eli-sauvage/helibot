@@ -2,14 +2,18 @@
 let members;
 const table = document.getElementById("table");
 const detail = document.getElementById("detail");
-fetch("http://77.151.84.172:2832/memb")
-  .then(function(r) {
-    return r.json();
-  })
-  .then(e => {
-    members = e;
-    aff(detail.checked);
-  });
+$.getJSON("http://77.151.84.172:2832/memb",(data)=>{
+  console.log(data)
+})
+// fetch("http://77.151.84.172:2832/memb",{mode:'no-cors'})
+//   .then(function(r) {
+//     console.log(r)
+//     return r.json();
+//   })
+//   .then(e => {
+//     members = e;
+//     aff(detail.checked);
+//   });
 
 detail.addEventListener("click", () => {
   aff(detail.checked);
