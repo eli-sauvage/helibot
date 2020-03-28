@@ -2,7 +2,7 @@
 let members;
 const table = document.getElementById("table");
 const detail = document.getElementById("detail");
-fetch("https://77.151.84.172:2832/memb")
+fetch("http://77.151.84.172:2832/memb")
   .then(function(r) {
     console.log(r)
     return r.json();
