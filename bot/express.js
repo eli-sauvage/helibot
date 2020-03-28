@@ -10,8 +10,8 @@ class exp {
   init(members, poll, appDirName) {
     const app = express();
     https.createServer({
-      key : fs.readFileSync("~/ssl/key.pem"),
-      cert : fs.readFileSync("~/ssl/cert.pem")
+      key : fs.readFileSync(appDirName + "/ssl/key.pem"),
+      cert : fs.readFileSync(appDirName + "/ssl/cert.pem")
     },app).listen(2832,()=>console.log("listening"))
     app.use(express.static("public"));
     app.use(bodyParser.json()); // to support JSON-encoded bodies
