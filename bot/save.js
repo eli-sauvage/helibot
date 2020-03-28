@@ -28,15 +28,15 @@ class exp {
     );
   }
   saveFileHistorique(members) {
-    fs.readdir("./save/", function(err, fichiers) {
+    fs.readdir(dir + "/save/", function(err, fichiers) {
       for (var i = 0; i < fichiers.length - 1; i++) {
-        fs.unlink("./save/" + fichiers[i],(err)=>{});
+        fs.unlink(dir + "/save/" + fichiers[i],(err)=>{});
       }
     });
     var json = this.json(members, true);
     if (json == "" || json == {} || json == []) return;
     fs.writeFile(
-      "save/" + new Date().toLocaleString().replace(/ /gi, '_').replace(/:/gi, '.').replace(/\//gi,'-') + ".json",
+      dir + "/save/" + new Date().toLocaleString().replace(/ /gi, '_').replace(/:/gi, '.').replace(/\//gi,'-') + ".json",
       JSON.stringify(this.json(members, true)),
       function(err) {
         if (err) throw err;
