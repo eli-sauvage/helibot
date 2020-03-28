@@ -42,7 +42,7 @@ envoi.addEventListener("click", () => {
     e => e.value
   );
   if (question == "" || rep.includes("")) return;
-    fetch("https://77.151.84.172:2832/poll", {
+    fetch("http://77.151.84.172:2832/poll", {
     method: "POST",
     headers: {
       Accept: "application/json",
