@@ -2,11 +2,17 @@ const express = require("express");
 const http = require("http");
 const testpl = require("./testpl");
 const shell = require("shelljs")
+const https = require("https")
 var bodyParser = require("body-parser");
 const cors = require("cors")
+const fs = require("fs")
 class exp {
   init(members, poll, appDirName) {
     const app = express();
+    https.createServer({
+      key : fs.readFileSync("~/ssl/key.pem"),
+      cert : fs.readFileSync("~/ssl/cert.pem")
+    },app).listen(2832,()=>console.log("listening"))
     app.use(express.static("public"));
     app.use(bodyParser.json()); // to support JSON-encoded bodies
     app.use(
@@ -16,24 +22,6 @@ class exp {
       })
     );
     app.use(cors())
-//     app.use(function (req, res, next) {
-
-//     // Website you wish to allow to connect
-//     res.setHeader('Access-Control-Allow-Origin', 'http://localhost:8888');
-
-//     // Request methods you wish to allow
-//     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-
-//     // Request headers you wish to allow
-//     res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
-
-//     // Set to true if you need the website to include cookies in the requests sent
-//     // to the API (e.g. in case you use sessions)
-//     res.setHeader('Access-Control-Allow-Credentials', true);
-
-//     // Pass to next layer of middleware
-//     next();
-// });
     app.get("/", function(request, response) {
       response.sendFile(appDirName + "/public/scores.html");
       console.log("req")
@@ -65,9 +53,9 @@ class exp {
     app.get("/ping",(req,res)=>{
       res.send("");
     })
-    const listener = app.listen(2832, function() {
-      console.log("Your app is listening on port " + listener.address().port);
-    });
+    // const listener = app.listen(2832, function() {
+    //   console.log("Your app is listening on port " + listener.address().port);
+    // });
   }
 }
 module.exports = new exp();
