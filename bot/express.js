@@ -47,8 +47,9 @@ class exp {
         console.log("mauvaise requete")
         return
       }
+      console.log("requete")
       poll.newPoll(req.body.quest, req.body.rep, req.body.every);
-      
+
     });
     app.post("/gitchange",(req,res)=>{
       res.send("")

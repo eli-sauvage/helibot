@@ -1,6 +1,6 @@
 let ajt = document.getElementById("ajt");
 let form = document.getElementById("form");
-let submit = document.getElementById("submit");
+let envoi = document.getElementById("envoi");
 let q = document.getElementById("quest");
 let msg = document.getElementById("msg");
 let index = 2; //nb de reponses
@@ -36,7 +36,7 @@ ajt.addEventListener("click", () => {
   form.insertBefore(div, ajt);
 });
 
-submit.addEventListener("click", () => {
+envoi.addEventListener("click", () => {
   // fetch("https://77.151.84.172:2832/poll", {method: "POST"})
   let question = q.value;
   let rep = Array.from(document.getElementsByClassName("rep")).map(
@@ -44,14 +44,14 @@ submit.addEventListener("click", () => {
   );
   if ((question == "" || rep.includes(""))) return;
   console.log(JSON.stringify({ quest: question, rep: rep, every : document.getElementById("mention").checked }))
-  // console.log("req")
-  // fetch("https://77.151.84.172:2832/poll", {
-  //   method: "POST",
-  //   headers: {
-  //     Accept: "application/json",
-  //     "Content-Type": "application/json"
-  //   },
-  //   body: JSON.stringify({ quest: question, rep: rep, every : document.getElementById("mention").checked })
-  // }).then(e=>console.log("ui"));
-  // console.log(question,rep)
+  console.log("req")
+  fetch("https://77.151.84.172:2832/poll", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ quest: question, rep: rep, every : document.getElementById("mention").checked })
+  }).then(e=>console.log("ui"));
+  console.log(question,rep)
 });
