@@ -42,6 +42,10 @@ class exp {
       console.log("poll req")
     });
     app.post("/poll", (req, res) => {
+      if(!(req.body.quest && req.body.rep && req.body.every)){
+        console.log("mauvaise requete")
+        return
+      }
       poll.newPoll(req.body.quest, req.body.rep, req.body.every);
     });
     app.post("/gitchange",(req,res)=>{
