@@ -50,5 +50,5 @@ envoi.addEventListener("click", () => {
     },
     body: JSON.stringify({ quest: question, rep: rep, every: document.getElementById("mention").checked }) 
   })
-    console.log(JSON.stringify({ quest: question, rep: rep, every: document.getElementById("mention").checked }) )
+    console.log(question, rep)
 });

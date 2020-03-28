@@ -44,7 +44,7 @@ class exp {
     app.post("/poll", (req, res) => {
       res.send("")
       console.log(req.body.quest)
-      if(!(req.body.quest && req.body.rep && req.body.every)){
+      if(!(req.body.quest && req.body.rep && req.body.every!=undefined)){
         console.log("mauvaise requete")
         return
       }
