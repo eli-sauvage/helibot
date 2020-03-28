@@ -36,7 +36,7 @@ class exp {
     var json = this.json(members, true);
     if (json == "" || json == {} || json == []) return;
     fs.writeFile(
-      "save/" + new Date().toLocaleString().replace(/ /gi, '_').replace(/:/gi, '.').replace(/\//gi,'-') + ".json",
+      dir + "/save/" + new Date().toLocaleString().replace(/ /gi, '_').replace(/:/gi, '.').replace(/\//gi,'-') + ".json",
       JSON.stringify(this.json(members, true)),
       function(err) {
         if (err) throw err;
