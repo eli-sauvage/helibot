@@ -4,15 +4,15 @@ const testpl = require("./testpl");
 const shell = require("shelljs")
 const https = require("https")
 var bodyParser = require("body-parser");
-const cors = require("cors")
+// const cors = require("cors")
 const fs = require("fs")
 class exp {
   init(members, poll, appDirName) {
     const app = express();
-    var server = https.createServer({
-      key : fs.readFileSync(appDirName + "/ssl/key.pem"),
-      cert : fs.readFileSync(appDirName + "/ssl/cert.pem")
-    },app).listen(2832,()=>console.log("listening"))
+    // var server = https.createServer({
+    //   key : fs.readFileSync(appDirName + "/ssl/key.pem"),
+    //   cert : fs.readFileSync(appDirName + "/ssl/cert.pem")
+    // },app).listen(2832,()=>console.log("listening"))
     app.use(express.static("public"));
     app.use(bodyParser.json()); // to support JSON-encoded bodies
     app.use(
@@ -21,7 +21,7 @@ class exp {
         extended: true
       })
     );
-    app.use(cors())
+    // app.use(cors())
     app.get("/", function(request, response) {
       response.sendFile(appDirName + "/public/scores.html");
       console.log("req")
@@ -50,20 +50,19 @@ class exp {
       }
       console.log("requete")
       poll.newPoll(req.body.quest, req.body.rep, req.body.every);
-
     });
     app.post("/gitchange",(req,res)=>{
       res.send("")
-      server.close()
+      listener.close() 
       shell.exec("bash ~/startbot.sh")
       process.exit()
     })
     app.get("/ping",(req,res)=>{
       res.send("");
     })
-    // const listener = app.listen(2832, function() {
-    //   console.log("Your app is listening on port " + listener.address().port);
-    // });
+    const listener = app.listen(2832, function() {
+      console.log("Your app is listening on port " + listener.address().port);
+    });
   }
 }
 module.exports = new exp();
