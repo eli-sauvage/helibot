@@ -22,9 +22,9 @@ table, th, td {
     float: left;
     width: 300px;
 }
-#right{    
-    /* border: 1px solid red; */
-}
+/* #right{    
+    border: 1px solid red;
+} */
 #wrapper {
     width: 750px;
     overflow: auto;

@@ -41,7 +41,7 @@ submit.addEventListener("click", () => {
     e => e.value
   );
   if ((question == "" || rep.includes(""))) return;
-  fetch("/poll", {
+  fetch("https://77.151.84.172:2832/poll", {
     method: "POST",
     headers: {
       Accept: "application/json",
