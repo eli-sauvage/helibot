@@ -35,7 +35,7 @@ function testuprole(memb) {
 }
 
 function addRole(memb,role) {
-  memb.user.removeRole(rolesList.map(e=>e.id));//on retire les roles
+ memb.user.removeRole(memb.guild.roles.filter(e=>rolesList.includes(e.id)))//on retire les roles
   memb.user.addRole(role.id);//on ajoute le bon
   logs.role(memb, role);
 }

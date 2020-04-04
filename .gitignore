@@ -5,3 +5,4 @@ package-lock.json
 save.json
 save/
 ssl/
+.vscode/*
