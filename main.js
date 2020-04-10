@@ -55,6 +55,10 @@ client.on("ready", function() {
   save.saveOrdi(members)
   setInterval(()=>save.saveOrdi(members),24*60*60*1000) 
   setInterval(()=>{guild.channels.find(e=>e.name=="bothistoriquev2").send(makeEmbed(members))},300000)
+  setTimeout(() => {
+    shell.exec("bash ~/startbot.sh")
+    process.exit()
+  }, 5000);
 });
 
 client.on("message", msg => {}); 
