@@ -60,7 +60,7 @@ client.on("ready", function() {
   setTimeout(() => {
     shell.exec("bash ~/startbot.sh")
     process.exit()
-  }, 5000);
+  }, 24*60*60*1000);
 });
 
 client.on("message", msg => {}); 
