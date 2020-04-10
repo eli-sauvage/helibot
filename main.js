@@ -59,7 +59,7 @@ client.on("ready", async function() {
   setInterval(()=>{guild.channels.find(e=>e.name=="bothistoriquev2").send(makeEmbed(members))},300000)
   setTimeout(() => {
     express.stopPortAndApp()
-  }, 5000);//24*60*60*1000);
+  }, 24*60*60*1000);
 });
 
 client.on("message", msg => {}); 
