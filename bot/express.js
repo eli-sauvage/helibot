@@ -6,6 +6,7 @@ const https = require("https")
 var bodyParser = require("body-parser");
 // const cors = require("cors")
 const fs = require("fs")
+var  listener
 class exp {
   init(members, poll, appDirName) {
     const app = express();
@@ -60,9 +61,12 @@ class exp {
     app.get("/ping",(req,res)=>{
       res.send("");
     })
-    const listener = app.listen(2832, function() {
+    listener = app.listen(2832, function() {
       console.log("Your app is listening on port " + listener.address().port);
     });
+  }
+  stopPort(){
+    listener.close()
   }
 }
 module.exports = new exp();

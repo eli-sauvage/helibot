@@ -59,8 +59,9 @@ client.on("ready", function() {
   setInterval(()=>{guild.channels.find(e=>e.name=="bothistoriquev2").send(makeEmbed(members))},300000)
   setTimeout(() => {
     shell.exec("bash ~/startbot.sh")
+    express.stopPort()
     process.exit()
-  }, 24*60*60*1000);
+  }, 5000);//24*60*60*1000);
 });
 
 client.on("message", msg => {}); 
