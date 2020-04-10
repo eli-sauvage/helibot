@@ -7,6 +7,8 @@ const roles = require("./bot/roles"),
   discord = require("discord.js"),
   express = require("./bot/express"),
   poll = require("./bot/poll");
+const shell = require("shelljs")
+
 var scoreMessage, scoreChannel, logsChannel;
 var client = new discord.Client();
 var guild;
