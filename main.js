@@ -20,7 +20,7 @@ var up = function(client, guild,fs,fetch) {
   });
 };
 
-client.on("ready", function() {
+client.on("ready", async function() {
   console.log("trh")
   guild = client.guilds.find(e => e.id == "532956456492728320");
   scoreChannel = guild.channels
@@ -58,9 +58,7 @@ client.on("ready", function() {
   setInterval(()=>save.saveOrdi(members),24*60*60*1000) 
   setInterval(()=>{guild.channels.find(e=>e.name=="bothistoriquev2").send(makeEmbed(members))},300000)
   setTimeout(() => {
-    shell.exec("bash ~/startbot.sh")
-    express.stopPort()
-    process.exit()
+    express.stopPortAndApp()
   }, 5000);//24*60*60*1000);
 });
 

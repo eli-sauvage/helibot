@@ -65,8 +65,11 @@ class exp {
       console.log("Your app is listening on port " + listener.address().port);
     });
   }
-  stopPort(){
-    listener.close()
+  stopPortAndApp(){
+    listener.close(()=>{
+      shell.exec("bash ~/startbot.sh")
+      process.exit()
+    })
   }
 }
 module.exports = new exp();
