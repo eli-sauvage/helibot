@@ -67,8 +67,10 @@ class exp {
   }
   stopPortAndApp(){
     listener.close(()=>{
-      shell.exec("bash ~/startbot.sh")
-      process.exit()
+      setTimeout(() => {
+        shell.exec("bash ~/startbot.sh")
+        process.exit()
+      }, 10*1000);
     })
   }
 }
