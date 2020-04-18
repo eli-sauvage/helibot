@@ -73,3 +73,13 @@ var sendScores = async function() {
   else scoreMessage.edit(makeEmbed(members));
 };
 client.login(require("./token"))
+
+
+
+
+
+
+process.on("uncaughtException",(err)=>{
+  console.error(error)
+  express.stopPortAndApp()
+})
