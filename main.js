@@ -80,6 +80,6 @@ client.login(require("./token"))
 
 
 process.on("uncaughtException",(err)=>{
-  console.error(error)
+  console.error(err)
   express.stopPortAndApp()
 })
