@@ -69,6 +69,12 @@ client.on("messageReactionAdd", (react, user) => {
   }
 });
 var sendScores = async function() {
+  scoreChannel.fetchMessages({ limit: 100 })
+  .then(e =>
+    e.forEach(m => {
+      m.delete();
+    })
+  );
   if (!scoreMessage) scoreMessage = await scoreChannel.send(makeEmbed(members));
   else scoreMessage.edit(makeEmbed(members));
 };
