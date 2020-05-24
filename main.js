@@ -70,13 +70,9 @@ client.on("messageReactionAdd", (react, user) => {
 });
 var sendScores = async function() {
   if (!scoreMessage) scoreMessage = await scoreChannel.send(makeEmbed(members));
-  else scoreMessage.edit(makeEmbed(members));
+  else scoreMessage.edit(makeEmbed(members)).catch(()=>scoreChannel.send(makeEmbed(members)))
 };
 client.login(require("./token"))
-
-
-
-
 
 
 process.on("uncaughtException",(err)=>{
