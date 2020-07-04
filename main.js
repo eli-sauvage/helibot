@@ -1,3 +1,4 @@
+require("./bot/vocaux")
 const roles = require("./bot/roles"),
   testpl = require("./bot/testpl"), 
   save = require("./bot/save"),
