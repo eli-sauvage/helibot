@@ -11,7 +11,7 @@ client.on("ready",()=>{
     setInterval(()=>{
         createIfFull()
         deleteIfEmpty()
-    },1000)
+    },2000)
 })
 
 
