@@ -31,7 +31,6 @@ function createIfFull(){
             position:2
         })
     }
-    })
 }
 function deleteIfEmpty(){
         let general = "729002418473402438"
@@ -46,6 +45,7 @@ function deleteIfEmpty(){
                 e.delete()
            else 
                 generalOccupé = false//pr supprimer channels d'après (le general est tjr ocuppé tkt)
+        })
 }
 
 client.login(require("./../token"))
