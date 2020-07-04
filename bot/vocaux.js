@@ -6,15 +6,15 @@ const mots = ["CHOQUET", "ATTISER", "MAGNETS", "PARAGES", "BRANDEE", "WHARTON", 
 
 
 client.on("ready",()=>{
-    guild = client.guilds.cache.get("544953131205918720");
-    guild = client.guilds.cache.get("532956456492728320");
+    guild = client.guilds.get("544953131205918720");
+    guild = client.guilds.get("532956456492728320");
     setInterval(refresh,1000)
 })
 
 
 function refresh(){
     let bypass = false
-    guild.channels.cache.filter(e=>
+    guild.channels.filter(e=>
             e.type=="voice"&&
             e.id!="729002418473402438"&&//general
             e.id!="535151379786760212"&&//afk
@@ -26,7 +26,7 @@ function refresh(){
                 bypass = true
     })
     var full = true
-    guild.channels.cache.filter(e=>
+    guild.channels.filter(e=>
         e.type=="voice"&&
         e.name!="AFK"
         ).forEach(e=>{
@@ -34,9 +34,9 @@ function refresh(){
                 full = false
         })
     if(full){
-        guild.channels.create(mots[Math.floor(Math.random() * mots.length)], {
+        guild.createChannel(mots[Math.floor(Math.random() * mots.length)], {
             type:"voice",
-            parent:guild.channels.cache.get("532956456492728323"),
+            parent:guild.channels.get("532956456492728323"),
             position:2
         })
     }
