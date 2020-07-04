@@ -13,17 +13,17 @@ client.on("ready",()=>{
 
 
 function refresh(){
-    let bypass = false
+    //let bypass = false
     guild.channels.filter(e=>
             e.type=="voice"&&
             e.id!="729002418473402438"&&//general
             e.id!="535151379786760212"&&//afk
             !e.members.array().length
         ).forEach(e=>{
-            if(bypass)
+            //if(bypass)
                 e.delete()
-            else 
-                bypass = true
+           //else 
+           //     bypass = true
     })
     var full = true
     guild.channels.filter(e=>
