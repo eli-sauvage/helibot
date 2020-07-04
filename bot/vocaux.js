@@ -11,9 +11,14 @@ client.on("ready",()=>{
     setInterval(()=>{
         createIfFull()
         deleteIfEmpty()
-    },2000)
+    },30*1000)
+
 })
 
+client.on("voiceStateUpdate",(oldMemb,newMemb)=>{
+    createIfFull()
+    deleteIfEmpty()
+})
 
 function createIfFull(){
     var full = true
