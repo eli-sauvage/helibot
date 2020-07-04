@@ -13,17 +13,18 @@ client.on("ready",()=>{
 
 
 function refresh(){
-    //let bypass = false
+    let general = "729002418473402438"
+    let generalOccupé = guild.channels.get("729002418473402438").members.array().length
     guild.channels.filter(e=>
             e.type=="voice"&&
-            e.id!="729002418473402438"&&//general
+            e.id!=general&&//general
             e.id!="535151379786760212"&&//afk
             !e.members.array().length
         ).forEach(e=>{
-            //if(bypass)
+            if(!generalOccupé)
                 e.delete()
-           //else 
-           //     bypass = true
+           else 
+                generalOccupé = false//pr supprimer channels d'après (le general est tjr ocuppé tkt)
     })
     var full = true
     guild.channels.filter(e=>
