@@ -1,6 +1,6 @@
 const fs = require("fs");
 fetch = require("node-fetch")
-const axios = require("axios")
+// const axios = require("axios")
 
 class exp {
   json(members, long) {
@@ -45,10 +45,7 @@ class exp {
     );
   }
   saveOrdi(members){
-    // var json = this.json(members,true)
-    // axios.post("http://77.151.84.172:5555",{
-    //   json
-    // })
+
   //   try{
   //     fetch("http://77.151.84.172:5555", {
   //     method: "POST",
