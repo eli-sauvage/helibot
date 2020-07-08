@@ -74,10 +74,13 @@ var sendScores = async function() {
   .fetchMessages({ limit: 100 })
   .then(async e=>{
     if(e.array().length > 1){
-        e.forEach(m=>m.delete())
+      for(let i=0;i<e.array().length;i++){
+        if(e.array()[i].id != scoreMessage.id)await e.array()[i].delete()
+      }
     }
     if (!scoreMessage) scoreMessage = await scoreChannel.send(makeEmbed(members));
     else scoreMessage.edit(makeEmbed(members)).catch(()=>scoreChannel.send(makeEmbed(members)))
+
   })
 };
 client.login(require("./token"))
