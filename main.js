@@ -42,7 +42,6 @@ client.on("ready", async function() {
         m.delete();
       })
     );
-  pollChannel.fetchMessages({ limit: 100 });
   setInterval(() => up(client, guild,require("fs"),require("node-fetch")), 1000);
   roles.up(members);
   //logs.historique(members)
@@ -70,8 +69,16 @@ client.on("messageReactionAdd", (react, user) => {
   }
 });
 var sendScores = async function() {
-  if (!scoreMessage) scoreMessage = await scoreChannel.send(makeEmbed(members));
-  else scoreMessage.edit(makeEmbed(members)).catch(()=>scoreChannel.send(makeEmbed(members)))
+  guild.channels
+  .find(e => e.name == "classement_points")
+  .fetchMessages({ limit: 100 })
+  .then(async e=>{
+    if(e.array().length > 1){
+        e.forEach(m=>m.delete())
+    }
+    if (!scoreMessage) scoreMessage = await scoreChannel.send(makeEmbed(members));
+    else scoreMessage.edit(makeEmbed(members)).catch(()=>scoreChannel.send(makeEmbed(members)))
+  })
 };
 client.login(require("./token"))
 
