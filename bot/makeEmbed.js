@@ -3,7 +3,7 @@ const testpl = require("./testpl")
 module.exports = function (members) {
   members.sort((a, b) => b.score - a.score)
   members.forEach(e => {
-    if(testpl(e)) e.name = "__" + (e.user.nickname || e.user.user.username) + "__";
+    if(testpl(e)) e.name = "__" + (e.user.nickname || e.user.user.username).substring(0,18) + "__";
     else e.name = e.user.nickname || e.user.user.username
     e.name = e.name.slice(0,22)
   });
