@@ -30,9 +30,10 @@ class exp {
   }
   saveFileHistorique(members,dir) {
     fs.readdir(dir + "/save/", function(err, fichiers) {
-      for (var i = 0; i < fichiers.length - 1; i++) {
-        fs.unlink(dir + "/save/" + fichiers[i],(err)=>{});
-      }
+      if(fichiers)
+        for (var i = 0; i < fichiers.length - 1; i++) {
+          fs.unlink(dir + "/save/" + fichiers[i],(err)=>{});
+        }
     });
     var json = this.json(members, true);
     if (json == "" || json == {} || json == []) return;
