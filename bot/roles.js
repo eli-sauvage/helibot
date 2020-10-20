@@ -26,9 +26,9 @@ function testuprole(memb) {
   var n = memb.user.user.username;
   for (var i = 0; i < rolesList.length; i++) {//on parcours les roles
     const role = rolesList[i];
-    if(memb.score >= rolesList[i+1].seuil){//si score du joueur > role suivant
+    /*if(memb.score >= rolesList[i+1].seuil){//si score du joueur > role suivant
       memb.user.removeRole(role.id);
-    }
+    }*/
     if (memb.score >= role.seuil) {//role max
       if (!memb.user.roles.map(e => e.id).includes(role.id)){//si a pas deja le role
         addRole(memb,role)
