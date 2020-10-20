@@ -1,6 +1,7 @@
 const logs = require("./logs.js");
 var rolesList = [
-  { id: "550342067210027030", seuil: 75000, name: "elite" },
+  { id: "768193206675832843", seuil: 100000, name: "bouf royal" },
+  { id: "550342067210027030", seuil: 75000, name: "hokage" },
   { id: "550343591239614467", seuil: 50000, name: "batracien" },
   { id: "550343935869059073", seuil: 25000, name: "abu yaqub" },
   { id: "550343939744333836", seuil: 20000, name: "erudit" },
