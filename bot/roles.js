@@ -40,7 +40,7 @@ function testuprole(memb) {
 
 
 async function addRole(memb,role) {
-  await memb.user.removeRole(await rolesList.map(e=>e.id));//on retire les roles
+  await memb.user.removeRole(rolesList.map(e=>e.id));//on retire les roles
   memb.user.addRole(role.id);//on ajoute le bon
   logs.role(memb, role);
 }
