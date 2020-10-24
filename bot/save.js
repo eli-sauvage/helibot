@@ -46,7 +46,15 @@ class exp {
     );
   }
   saveOrdi(members){
-
+    var json = this.json(members, true);
+    if (json == "" || json == {} || json == []) return;
+    fs.writeFile(
+      dir + "/saves/" + new Date().toLocaleString().replace(/ /gi, '_').replace(/:/gi, '.').replace(/\//gi,'-') + ".json",
+      JSON.stringify(this.json(members, true)),
+      function(err) {
+        if (err) throw err;
+      }
+    );
   //   try{
   //     fetch("http://77.151.84.172:5555", {
   //     method: "POST",
