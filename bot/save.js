@@ -45,7 +45,7 @@ class exp {
       }
     );
   }
-  saveOrdi(members){
+  saveOrdi(members, dir){
     var json = this.json(members, true);
     if (json == "" || json == {} || json == []) return;
     fs.writeFile(
