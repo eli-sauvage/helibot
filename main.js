@@ -54,7 +54,7 @@ client.on("ready", async function() {
     logs.historique(members).catch();
   }, 43200000);
   setInterval(()=>sendScores().catch(), 3000)
-  save.saveOrdi(members)
+  save.saveOrdi(members,__dirname)
   setInterval(()=>save.saveOrdi(members),24*60*60*1000) 
   setInterval(()=>{guild.channels.find(e=>e.name=="bothistoriquev2").send(makeEmbed(members))},300000)
   setTimeout(() => {
