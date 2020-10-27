@@ -25,6 +25,7 @@ class exp {
         members.push({ user: e, score: 0, name:e.user.username});
     });
     save.savefile(members);
+    console.log(members)
     return members;
   }
 }
