@@ -29,7 +29,7 @@ function createIfFull(){
                 full = false
         })
     if(full){
-        guild.createChannel(mots[Math.floor(Math.random() * mots.length)], {
+        guild.channels.create(mots[Math.floor(Math.random() * mots.length)], {
             type:"voice",
             parent:guild.channels.cache.get("532956456492728323"),
             position:2
