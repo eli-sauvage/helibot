@@ -11,7 +11,7 @@ const roles = require("./bot/roles"),
 const shell = require("shelljs")
 
 var scoreMessage, scoreChannel, logsChannel;
-var client = new discord.Client();
+var client = new discord.Client({ws:{intents:discord.Intents.ALL}});
 var guild;
 var members = [];
  
