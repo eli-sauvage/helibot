@@ -77,10 +77,10 @@ class exp {
       var msg = "double vote : " 
       testDouble(userArray).map(e=>e.username).forEach(e=>{
         msg = msg.concat(e + " ")
-      })*/
+      })
       //react.message.channel.send(msg)
       //console.log("double=>" + testDouble(userArray).map(e=>e.username))
     }
-  }
+  }*/
 }
 module.exports = new exp();
