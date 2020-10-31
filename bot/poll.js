@@ -44,7 +44,7 @@ class exp {
   }
   newPoll(q, r, m) {
         console.log("poll");
-    var msg = new discord.RichEmbed()
+    var msg = new discord.MessageEmbed()
       .setColor("#0099ff")
       .setTitle("Sondage")
       //.setURL("site en cours")//https://murmuring-dawn-90139.herokuapp.com/poll")
@@ -66,18 +66,18 @@ class exp {
     }).catch();
   }
   newReact(react,user){
-    if(react.me || !react.users.array().map(e=>e.bot).includes(true))
+    /*if(react.me || !react.users.cache.array().map(e=>e.bot).includes(true))
       return
     var userArray = []
-    Array.from(react.message.reactions).forEach(e=>{
+    Array.from(react.message.reactions.cache).forEach(e=>{
       userArray = userArray.concat(e[1].users.array())
     })
-    console.log(userArray.map(e=>e.username))
-    if(testDouble(userArray).length && testDouble(userArray).includes(user)){
+    console.log(userArray.map(e=>e.username))*/
+    /*if(testDouble(userArray).length && testDouble(userArray).includes(user)){
       var msg = "double vote : " 
       testDouble(userArray).map(e=>e.username).forEach(e=>{
         msg = msg.concat(e + " ")
-      })
+      })*/
       //react.message.channel.send(msg)
       //console.log("double=>" + testDouble(userArray).map(e=>e.username))
     }
