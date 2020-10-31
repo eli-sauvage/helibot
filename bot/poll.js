@@ -80,7 +80,7 @@ class exp {
       })
       //react.message.channel.send(msg)
       //console.log("double=>" + testDouble(userArray).map(e=>e.username))
-    }
-  }*/
+    }*/
+  }
 }
 module.exports = new exp();
