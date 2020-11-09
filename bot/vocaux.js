@@ -29,11 +29,11 @@ function createIfFull(){
                 full = false
         })
     if(full){
+        let parent = "532956456492728323"
         guild.channels.create(mots[Math.floor(Math.random() * mots.length)], {
             type:"voice",
-            parent:guild.channels.cache.get("532956456492728323"),
-            position:2
-        })
+            parent:parent
+        }).then(channel=>channel.setPosition(guild.channels.cache.filter(e=>e.parentID == parent).size-2))
     }
 }
 function deleteIfEmpty(){
