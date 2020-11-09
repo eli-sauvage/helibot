@@ -23,7 +23,7 @@ function createIfFull(){
     var full = true
     guild.channels.cache.filter(e=>
         e.type=="voice"&&
-        e.id!==guild.afkChannelID
+        e.id!=guild.afkChannelID
         ).forEach(e=>{
             if(!e.members.array().length)
                 full = false
