@@ -46,7 +46,7 @@ class exp {
     app.post("/gitchange",(req,res)=>{
       res.send("")
       listener.close() 
-      shell.exec("bash ~/startbot.sh")
+      shell.exec("bash ~/startBot.sh")
       process.exit()
     })
     app.get("/ping",(req,res)=>{
@@ -59,7 +59,7 @@ class exp {
   stopPortAndApp(){
     listener.close(()=>{
       setTimeout(() => {
-        shell.exec("bash ~/startbot.sh")
+        shell.exec("bash ~/startBot.sh")
         process.exit()
       }, 10*1000);
     })
