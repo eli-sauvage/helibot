@@ -1,4 +1,4 @@
-module.exports = function(memb) {
+module.exports = function(memb, guild) {
   if (memb.user.voice.channel == undefined) return false;
   if (
     memb.user.voice.channel.members.array().length >= 2 && //au moins 2 personnes ds channel

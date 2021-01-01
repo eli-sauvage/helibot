@@ -18,7 +18,7 @@ var members = [];
  
 var up = function(client, guild,fs,fetch) {
   members.forEach(memb => { 
-    if (testpl(memb)){
+    if (testpl(memb, guild)){
       memb.score += 1 / 60;
       memb.ancienScore += 1/60;
     }
@@ -30,7 +30,7 @@ client.on("ready", async function() {
   guild = client.guilds.cache.find(e => e.id == "532956456492728320");
   scoreChannel = guild.channels.cache.array().find(e => e.name === "classement_points");
   members = start.load(guild,__dirname);
-  express.init(members, poll, __dirname);
+  express.init(members, poll, __dirname, guild);
   logsChannel = guild.channels.cache.array().find(e => e.name === "bot_logs");
   logs.init(logsChannel, poll);
   logs.start();
@@ -55,7 +55,7 @@ client.on("ready", async function() {
   setInterval(() => sendScores().catch(), 3000)
   save.saveOrdi(members,__dirname)
   setInterval(()=>save.saveOrdi(members),24*60*60*1000) 
-  setInterval(()=>{guild.channels.cache.find(e=>e.name=="bothistoriquev2").send(makeEmbed(members, roles))},300000)
+  setInterval(()=>{guild.channels.cache.find(e=>e.name=="bothistoriquev2").send(makeEmbed(members, roles, guild, guild))},300000)
   setTimeout(() => {
     express.stopPortAndApp()
   }, 24*60*60*1000);
@@ -78,8 +78,8 @@ var sendScores = async function() {
         if(e.array()[i].id != scoreMessage.id)await e.array()[i].delete()
       }
     }
-    if (!scoreMessage) scoreMessage = await scoreChannel.send(makeEmbed(members, roles));
-    else scoreMessage.edit(makeEmbed(members, roles)).catch(()=>scoreChannel.send(makeEmbed(members, roles)))
+    if (!scoreMessage) scoreMessage = await scoreChannel.send(makeEmbed(members, roles, guild));
+    else scoreMessage.edit(makeEmbed(members, roles, guild)).catch(()=>scoreChannel.send(makeEmbed(members, roles, guild)))
 
   })
 };

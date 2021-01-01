@@ -8,7 +8,7 @@ var bodyParser = require("body-parser");
 const fs = require("fs")
 var  listener
 class exp {
-  init(members, poll, appDirName) {
+  init(members, poll, appDirName, guild) {
     const app = express();
     app.use(express.static("public"));
     app.use(bodyParser.json()); // to support JSON-encoded bodies
@@ -25,7 +25,7 @@ class exp {
       var rep = [];
       members.forEach(e => {
         var name = e.user.nickname || e.user.user.username;
-        rep.push({ score: e.score, name: name, co: testpl(e), ancienScore: e.ancienScore });
+        rep.push({ score: e.score, name: name, co: testpl(e, guild), ancienScore: e.ancienScore });
       });
       response.send(rep);
     });
