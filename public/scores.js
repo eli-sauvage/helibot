@@ -32,8 +32,8 @@ let aff = function(det) {
       ? Math.round(memb.score * 1000) / 1000
       : Math.round(memb.score);
       ancienScoreCell.innerHTML = det
-        ? Math.round(memb.score * 1000) / 1000
-        : Math.round(memb.score);    
+        ? Math.round(memb.ancienScore * 1000) / 1000
+        : Math.round(memb.ancienScore);    
       i++;
   });
 };
