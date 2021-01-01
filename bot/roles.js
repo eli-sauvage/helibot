@@ -22,6 +22,7 @@ class exp {
     let str = ""
     for(let i = rolesList.length - 1; i >= 0 ; i--)
       str += rolesList[i].name + ": " + rolesList[i].seuil + (i==0? "":", ") 
+    return str
   }
   res() {}
 }
