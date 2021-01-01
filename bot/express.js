@@ -10,19 +10,13 @@ var  listener
 class exp {
   init(members, poll, appDirName) {
     const app = express();
-    // var server = https.createServer({
-    //   key : fs.readFileSync(appDirName + "/ssl/key.pem"),
-    //   cert : fs.readFileSync(appDirName + "/ssl/cert.pem")
-    // },app).listen(2832,()=>console.log("listening"))
     app.use(express.static("public"));
     app.use(bodyParser.json()); // to support JSON-encoded bodies
     app.use(
       bodyParser.urlencoded({
-        // to support URL-encoded bodies
         extended: true
       })
     );
-    // app.use(cors())
     app.get("/", function(request, response) {
       response.sendFile(appDirName + "/public/scores.html");
       console.log("req")
@@ -31,13 +25,10 @@ class exp {
       var rep = [];
       members.forEach(e => {
         var name = e.user.nickname || e.user.user.username;
-        rep.push({ score: e.score, name: name, co: testpl(e) });
+        rep.push({ score: e.score, name: name, co: testpl(e), ancienScore: e.ancienScore });
       });
       response.send(rep);
     });
-    // app.get("/points", (req, res) => {
-    //   res.sendFile("/app/views/categoriesPtCool.html");
-    // });
     app.get("/poll", (req, res) => {
       res.sendFile(appDirName + "/public/poll.html");
       console.log("poll req")

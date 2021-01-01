@@ -10,10 +10,11 @@ class exp {
         savedata.push({
           username: e.user.user.username,
           score: Math.round(e.score),
-          id: e.user.user.id
+          id: e.user.user.id,
+          ancienScore : Math.round(e.ancienScore)
         });
-      } else if (Math.round(e.score) != 0) {
-        savedata.push({ id: e.user.user.id, s: Math.round(e.score) });
+      } else if (Math.round(e.ancienScore) != 0) {
+        savedata.push({ id: e.user.user.id, s: Math.round(e.score), as:Math.round(e.ancienScore) });
       }
     });
     savedata.sort((a, b) => b.score - a.score);
@@ -55,16 +56,6 @@ class exp {
         if (err) throw err;
       }
     );
-  //   try{
-  //     fetch("http://77.151.84.172:5555", {
-  //     method: "POST",
-  //     headers: {
-  //       Accept: "application/json",
-  //       "Content-Type": "application/json"
-  //     },
-  //     body: JSON.stringify(json)
-  //   })
-  // }catch{}
   }
 }
 module.exports = new exp();
