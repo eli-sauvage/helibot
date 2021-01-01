@@ -18,6 +18,11 @@ class exp {
       testuprole(memb);
     });
   }
+  toString(){
+    let str = ""
+    for(let i = rolesList.length - 1; i >= 0 ; i--)
+      str += rolesList[i].name + ": " + rolesList[i].seuil + (i==0? "":", ") 
+  }
   res() {}
 }
 module.exports = new exp();

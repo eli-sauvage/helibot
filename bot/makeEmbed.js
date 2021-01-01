@@ -1,5 +1,6 @@
 const discord = require("discord.js")
 const testpl = require("./testpl")
+const roles = require("./roles")
 module.exports = function (members) {
   members.sort((a, b) => b.score - a.score)
   members.forEach(e => {
@@ -25,5 +26,6 @@ module.exports = function (members) {
   for(let i=3;i<15;i++){
     embed.addField("**#"+(i+1)+"**" + members[i].name + ":","**" + Math.round(members[i].score) + "**",true)
   }
+  embed.setFooter(roles.toString())
   return embed;
 }
