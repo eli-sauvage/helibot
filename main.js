@@ -55,7 +55,7 @@ client.on("ready", async function() {
   setInterval(() => sendScores().catch(), 3000)
   save.saveOrdi(members,__dirname)
   setInterval(()=>save.saveOrdi(members),24*60*60*1000) 
-  setInterval(()=>{guild.channels.cache.find(e=>e.name=="bothistoriquev2").send(makeEmbed(members))},300000)
+  setInterval(()=>{guild.channels.cache.find(e=>e.name=="bothistoriquev2").send(makeEmbed(members, roles))},300000)
   setTimeout(() => {
     express.stopPortAndApp()
   }, 24*60*60*1000);
@@ -78,8 +78,8 @@ var sendScores = async function() {
         if(e.array()[i].id != scoreMessage.id)await e.array()[i].delete()
       }
     }
-    if (!scoreMessage) scoreMessage = await scoreChannel.send(makeEmbed(members));
-    else scoreMessage.edit(makeEmbed(members)).catch(()=>scoreChannel.send(makeEmbed(members)))
+    if (!scoreMessage) scoreMessage = await scoreChannel.send(makeEmbed(members, roles));
+    else scoreMessage.edit(makeEmbed(members, roles)).catch(()=>scoreChannel.send(makeEmbed(members, roles)))
 
   })
 };

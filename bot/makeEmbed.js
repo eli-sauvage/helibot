@@ -1,7 +1,6 @@
 const discord = require("discord.js")
 const testpl = require("./testpl")
-const roles = require("./roles")
-module.exports = function (members) {
+module.exports = function (members, roles) {
   members.sort((a, b) => b.score - a.score)
   members.forEach(e => {
     if(testpl(e)) e.name = "__" + (e.user.nickname || e.user.user.username).substring(0,18) + "__";
