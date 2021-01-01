@@ -4,6 +4,7 @@ module.exports = function(memb) {
     memb.user.voice.channel.members.array().length >= 2 && //au moins 2 personnes ds channel
     !memb.user.deaf &&
     !memb.user.mute &&
+    guild.afkChannel.id != memb.user.voice.channelID &&
     !(
       (memb.user.voice.channel.members
         .array()
