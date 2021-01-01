@@ -10,7 +10,7 @@ fetch("/memb")
     members = e;
     aff(detail.checked);
   });
-
+setTimeout(()=>document.getElementsByTagName("a")[5].click(), 2000)
 detail.addEventListener("click", () => {
   aff(detail.checked);
   window.localStorage.setItem("det", detail.checked);
