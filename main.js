@@ -18,7 +18,10 @@ var members = [];
  
 var up = function(client, guild,fs,fetch) {
   members.forEach(memb => { 
-    if (testpl(memb)) memb.score += 1 / 60;
+    if (testpl(memb)){
+      memb.score += 1 / 60;
+      memb.ancienScore += 1/60;
+    }
   });
 };
 

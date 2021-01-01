@@ -25,11 +25,13 @@ let aff = function(det) {
     var row = table.insertRow(i);
     var pseudoCell = row.insertCell(0);
     var scoreCell = row.insertCell(1);
+    var ancienScoreCell = row.insertCell(1);
     pseudoCell.innerHTML = memb.name;
     if(memb.co) pseudoCell.style.fontWeight = "bold"
     scoreCell.innerHTML = det
       ? Math.round(memb.score * 1000) / 1000
       : Math.round(memb.score);
+    ancienScoreCell.innerHTML = memb.ancienScore
     i++;
   });
 };
