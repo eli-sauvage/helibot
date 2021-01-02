@@ -62,6 +62,9 @@ client.on("ready", async function() {
 });
 
 client.on("message", msg => {}); 
+client.on("guildMemberAdd", ()=>{
+  start.testNewMembers()
+})
 client.on("messageReactionAdd", (react, user) => {
   if (react.message.channel.name == "sondages") {
     poll.newReact(react, user);

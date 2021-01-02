@@ -19,13 +19,18 @@ class exp {
       )
         members.push({ user: guild.members.cache.get(e.id), score: e.score || e.s || 0, name: guild.members.cache.get(e.id).user.username, ancienScore : e.ancienScore || e.as || 0 }); //ajout ds liste depuis fichier save
     });
+    members = this.testNewMembers(guild, members)
+    save.savefile(members);
+    return members;
+  }
+  testNewMembers(guild, members){
     guild.members.cache.forEach(e => {
       if (!members.map(f => f.user.user.id).includes(e.id) && !e.user.bot)
         //si nv pas ds la liste
         members.push({ user: e, score: 0, name:e.user.username, ancienScore : 0});
     });
-    save.savefile(members);
-    return members;
+    return members
   }
 }
+ 
 module.exports = new exp()
