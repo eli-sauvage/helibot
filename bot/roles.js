@@ -30,7 +30,7 @@ function testuprole(memb) {
       memb.user.removeRole(role.id);
     }*/
     if (memb.score >= role.seuil) {//role max
-      if (!memb.user.roles.cache.map(e => e.id).includes(role.id)){//si a pas deja le role
+      if (!memb.user.roles.map(e => e.id).includes(role.id)){//si a pas deja le role
         addRole(memb,role)
       }
       return;
@@ -42,8 +42,8 @@ function testuprole(memb) {
 async function addRole(memb,role) {
   //await memb.user.removeRole(rolesList.map(e=>e.id));//on retire les roles
   rolesList.forEach(role=>{
-    memb.user.roles.remove(role.id)
+    memb.user.removeRole(role.id)
   })
-  memb.user.roles.add(role.id);//on ajoute le bon
+  memb.user.addRole(role.id);//on ajoute le bon
   logs.role(memb, role);
 }

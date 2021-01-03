@@ -23,21 +23,20 @@ var up = function(client, guild,fs,fetch) {
 
 client.on("ready", async function() {
   console.log("trh")
-  guild = client.guilds.cache.find(e => e.id == "532956456492728320");
-  scoreChannel = guild.channels.cache
+  guild = client.guilds.find(e => e.id == "532956456492728320");
+  scoreChannel = guild.channels
     .array()
     .find(e => e.name === "classement_points");
- members = start.load(guild,__dirname);
+  members = start.load(guild,__dirname);
   express.init(members, poll, __dirname);
-  logsChannel = guild.channels.cache.array().find(e => e.name === "bot_logs");
+  logsChannel = guild.channels.array().find(e => e.name === "bot_logs");
   logs.init(logsChannel, poll);
   logs.start();
-  var pollChannel = guild.channels.cache.find(e => e.name === "sondages");//client.guilds.find(e => e.id == "544953131205918720").channels.find(e => e.name == "sondages"); ////
+  var pollChannel = guild.channels.find(e => e.name === "sondages");//client.guilds.find(e => e.id == "544953131205918720").channels.find(e => e.name == "sondages"); ////
   poll.init(pollChannel, discord);
-  guild.channels.cache
+  guild.channels
     .find(e => e.name == "classement_points")
-    .messages
-    .fetch({ limit: 100 })
+    .fetchMessages({ limit: 100 })
     .then(e =>
       e.forEach(m => {
         m.delete();
@@ -57,7 +56,7 @@ client.on("ready", async function() {
   setInterval(()=>sendScores().catch(), 3000)
   save.saveOrdi(members,__dirname)
   setInterval(()=>save.saveOrdi(members),24*60*60*1000) 
-  setInterval(()=>{guild.channels.cache.find(e=>e.name=="bothistoriquev2").send(makeEmbed(members))},300000)
+  setInterval(()=>{guild.channels.find(e=>e.name=="bothistoriquev2").send(makeEmbed(members))},300000)
   setTimeout(() => {
     express.stopPortAndApp()
   }, 24*60*60*1000);
@@ -70,10 +69,9 @@ client.on("messageReactionAdd", (react, user) => {
   }
 });
 var sendScores = async function() {
-  guild.channels.cache
+  guild.channels
   .find(e => e.name == "classement_points")
-  .messages
-  .fetch({ limit: 100 })
+  .fetchMessages({ limit: 100 })
   .then(async e=>{
     if(e.array().length > 1){
       for(let i=0;i<e.array().length;i++){

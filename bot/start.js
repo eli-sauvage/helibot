@@ -14,17 +14,18 @@ class exp {
     } 
     contents.forEach(e => {
       if (
-        guild.members.cache.get(e.id) &&
+        guild.members.get(e.id) &&
         !members.map(e => e.user.user.id).includes(e.id)
       )
-        members.push({ user: guild.members.cache.get(e.id), score: e.score || e.s || 0, name: guild.members.cache.get(e.id).user.username }); //ajout ds liste depuis fichier save
+        members.push({ user: guild.members.get(e.id), score: e.score || e.s || 0, name: guild.members.get(e.id).user.username }); //ajout ds liste depuis fichier save
     });
-    guild.members.cache.forEach(e => {
+    guild.members.forEach(e => {
       if (!members.map(f => f.user.user.id).includes(e.id) && !e.user.bot)
         //si nv pas ds la liste
         members.push({ user: e, score: 0, name:e.user.username});
     });
     save.savefile(members);
+    console.log(members)
     return members;
   }
 }
