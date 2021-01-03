@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>helibot polls</title>
+    <meta name="description" content="poll" />
+    <link
+      id="favicon"
+      rel="icon"
+      href="https://images-na.ssl-images-amazon.com/images/I/615Q1Ms%2Bb4L._SX425_.jpg"
+      type="image/x-icon"
+    />
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- import the webpage's stylesheet -->
+
+    <!-- import the webpage's client-side javascript file -->
+    <script src="./poll.js" defer></script>
+  </head>
+  <body>
+    <div id="form">
+      <label for="name">question</label>
+      <input type="text" name="name" id="quest" required />
+      <br />
+      reponses possibles:
+      <br />
+      <br />
+      <input type = "text" class="rep" required/>
+      <br />
+      <input type = "text" class="rep" required/>
+      <br />
+      <input type="button" value="ajt réponse" id="ajt"/>
+      <input type="submit" value="envoyer" id = "envoi"/>
+      <br>
+      <input type="checkbox" id="mention">
+      <label for="mention">mentionner @everyone?</label>
+    </form>
+    <br/>
+    <span id="msg" style ="color:red;"></span>
+  </body>
+</html>
