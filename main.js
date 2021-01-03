@@ -26,7 +26,7 @@ var up = function(client, guild,fs,fetch) {
 };
 
 client.on("ready", async function() {
-  console.log("bot ready")
+  console.log("bot is ready")
   guild = client.guilds.cache.find(e => e.id == "532956456492728320");
   scoreChannel = guild.channels.cache.array().find(e => e.name === "classement_points");
   members = start.load(guild,__dirname);
