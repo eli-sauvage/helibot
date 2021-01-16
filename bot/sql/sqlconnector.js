@@ -1,17 +1,25 @@
 module.exports = class sql{    
-    constructor(db){ 
-        this.mySQl = require('mysql')
-        this.conn = this.mySQl.createConnection({
-            host: '192.168.1.57', 
-            port:'3306',
-            user:'localJs',
-            password: '8IkWpMc55WYO:J8?9$g0$lp["=[F^t',
-            database: db
+    constructor(db){
+        return new Promise((res, rej)=>{
+            this.mySQl = require('mysql')
+            this.conn = this.mySQl.createConnection({
+                host: '77.151.84.172', 
+                port:'3306',
+                user:'bot',
+                password: require("../../token").sql,
+                database: db
+            })
+            this.conn.connect((e)=>{
+                if(e)
+                    rej(e)
+                else
+                    res(this)
+            })  
         })
-        this.conn.connect((e)=>{
-            if(e.code == "ER_BAD_DB_ERROR"){
-                
-            }
+    }
+    query(query){
+        this.conn.query(query, (e, res)=>{
+            if(e) console.error(e)
         })
     }
 
