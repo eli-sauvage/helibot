@@ -6,7 +6,7 @@ module.exports = class sql{
                 host: '77.151.84.172', 
                 port:'3306',
                 user:'bot',
-                password: require("../../token").sql,
+                password: require("../token").sql,
                 database: db
             })
             this.conn.connect((e)=>{
