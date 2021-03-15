@@ -18,8 +18,14 @@ module.exports = class sql{
         })
     }
     query(query){
-        this.conn.query(query, (e, res)=>{
-            if(e) console.error(e)
+        return new Promise((res, rej)=>{
+            this.conn.query(query, (e, result)=>{
+                if(e){
+                    console.error(e)
+                    rej(e)
+                }else
+                    res()
+            })
         })
     }
 
