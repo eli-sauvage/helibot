@@ -43,6 +43,7 @@ function deleteIfEmpty(){
             e.type=="voice"&&
             e.id!=general&&//general
             e.id!="535151379786760212"&&//afk
+            e.name != "testHelibot"&&
             !e.members.array().length
         ).forEach(e=>{
             if(!generalOccupé)
