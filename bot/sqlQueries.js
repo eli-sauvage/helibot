@@ -10,7 +10,7 @@ class SqlQueries{
         })
     }
     async onMemberConnect(memberID){
-        this.sql.query(`INSERT INTO Session (User, ConnectionTime, Point) VALUES (${memberID}, now(), (SELECT MAX(Point) FROM (select * from Session) AS m2 WHERE User = ${memberID}));`)
+        this.sql.query(`INSERT INTO Session (User, ConnectionTime, Point, Name) VALUES (${memberID}, now(), (SELECT MAX(Point) FROM (select * from Session) AS m2 WHERE User = ${memberID}), (select name where User = ${memberID}));`)
     }
     async onMemberDisconnect(memberID){
         let sessionID = await this.sql.getSingleVal(`SELECT max(id) FROM Session Where User = ${memberID}`)

@@ -8,7 +8,7 @@ class Points{
         let currentPoints = await this.sql.getPoints()
         let members = this.client.guilds.cache.find(e=>e.id == require("./const").guildId).members.cache.array()
         for(var i=0;i<members.length;i++){
-            if(!currentPoints.map(e=>e.User).includes(members[i].id)){
+            if(!currentPoints.map(e=>e.User).includes(members[i].id) && !members[i].user.bot){
                 console.log("adding "+members[i].user.username);
                 await this.sql.addMember(members[i].id)
             }
