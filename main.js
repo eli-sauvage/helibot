@@ -7,7 +7,8 @@ client.on("ready", async ()=>{
     new (require("./bot/messageScores"))(client)
     let query = await require("./bot/sqlQueries").init()
     query.fillNULL()
-
+    console.log(client.guilds.cache.find(e=>e.id == '532956456492728320').members.cache.find(e=>e.nickname == "Elic de 3").id)
+    console.log(client.guilds.cache.find(e=>e.id == '532956456492728320').members.cache.find(e=>e.nickname == "Elic de 3").user.id)
 
 
     

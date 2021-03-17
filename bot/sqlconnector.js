@@ -7,7 +7,8 @@ module.exports = class sql{
                 port:'3306',
                 user:'bot',
                 password: require("../token").sql,
-                database: db
+                database: db,
+                charset : "utf8mb4"
             })
             this.conn.connect((e)=>{
                 if(e)
@@ -24,9 +25,9 @@ module.exports = class sql{
                     console.error(e)
                     rej(e)
                 }else
-                    res()
+                    res(result)
             })
-        })
+        }).catch(console.log)
     }
 
     getSingleVal(query){
