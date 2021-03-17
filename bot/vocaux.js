@@ -23,9 +23,10 @@ function createIfFull(){
     var full = true
     guild.channels.cache.filter(e=>
         e.type=="voice"&&
-        e.id!=guild.afkChannelID
-        ).forEach(e=>{
-            if(!e.members.array().length)
+        e.id!=guild.afkChannelID&&
+        e.parent.name == "Salons vocaux"
+        ).forEach(chann=>{
+            if(!chann.members.array().length)
                 full = false
         })
     if(full){
@@ -53,4 +54,4 @@ function deleteIfEmpty(){
         })
 }
 
-client.login(require("./../token"))
+client.login(require("./../token").discord)
