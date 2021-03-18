@@ -2,7 +2,7 @@ const { SlowBuffer } = require("buffer")
 const fs = require("fs")
 let content = JSON.parse(fs.readFileSync(process.argv[2], "utf-8"))
 let Sql = require("./bot/sqlconnector")
-// f()
+f()
 async function f(){
     let sql = await new Sql("helibot")
     // console.log(sql.query())
