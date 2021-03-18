@@ -15,7 +15,10 @@ class Points{
             if(Points.testCo(members[i].voice))this.sql.onMemberConnect(members[i].id, (members[i].nickname || members[i].user.username))//ouvre toutes les co en cours
         }
         this.client.on("voiceStateUpdate", async (oldState, newState)=>{
-            if(oldState.guild.id != require("./const").guildId )return
+            if(oldState.guild.id != require("./const").guildId )return//mauvaise guild
+            if((oldState.channel.id == newState.channel.id) &&
+                (oldState.mute == newState.mute)&&
+                (oldState.deaf == newState.deaf))return //si pas changement de channel / de mute
             if(Points.testCo(newState)){
                 console.log(`${oldState.member.user.username} a rejoint`)
                 this.sql.onMemberConnect(newState.member.id, (newState.member.nickname || newState.member.user.username))
