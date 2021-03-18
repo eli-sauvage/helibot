@@ -16,7 +16,7 @@ class Points{
         }
         this.client.on("voiceStateUpdate", async (oldState, newState)=>{
             if(oldState.guild.id != require("./const").guildId )return//mauvaise guild
-            if((oldState.channel.id == newState.channel.id) &&
+            if((oldState.channelID == newState.channeID) &&
                 (oldState.mute == newState.mute)&&
                 (oldState.deaf == newState.deaf))return //si pas changement de channel / de mute
             if(Points.testCo(newState)){
@@ -32,9 +32,9 @@ class Points{
         if(voiceState.member.user.bot) return false
         if(!voiceState.channel) return false//si pas dans un channel
         if(voiceState.selfMute || voiceState.selfDeaf) return false // si mute/mute casque
-        // if(voiceState.channel.members.size == 1 )return false //si tout seul
+        if(voiceState.channel.members.size == 1 )return false //si tout seul
         if(voiceState.channel.id == voiceState.guild.afkChannel.id) return false //afk
-        // if(voiceState.channel.members.filter(e=>e.user.bot).size == voiceState.channel.members.size - 1) return false //si tout seul avec un/des bots
+        if(voiceState.channel.members.filter(e=>e.user.bot).size == voiceState.channel.members.size - 1) return false //si tout seul avec un/des bots
         return true
     }
 }
