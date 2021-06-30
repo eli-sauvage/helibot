@@ -34,7 +34,7 @@ module.exports = class sql{
         return new Promise((resolve, rej)=>{
             this.conn.query(query, (e,res)=>{
                 if(e) rej(e)
-                if(res.length != 1) rej("get single prop returned > 1 or 0 row")
+                if(res.length != 1)return rej("get single prop returned > 1 or 0 row")
                 if(Object.keys(res[0]).length != 1) rej("get single prop returned > 1 or 0 columns")
                 resolve(res[0][Object.keys(res[0])])
             })

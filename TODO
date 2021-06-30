@@ -1,4 +1,2 @@
 max session duration
-local counter
 chart website => https://developers-dot-devsite-v2-prod.appspot.com/chart/interactive/docs/gallery/linechart
-argument to know if db local of not
