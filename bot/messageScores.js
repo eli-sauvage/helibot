@@ -32,6 +32,7 @@ class MessageScores{
         scores.forEach(e => {
             let a = e.User;
             let user = this.guild.members.cache.find(e=>e.id==a)
+            if(!user)return
             let isCo = this.points.constructor.testCo(user.voice)
             if(isCo) e.name = "__" + (user.nickname || user.user.username).substring(0,18) + "__";
             else e.name = user.nickname || user.user.username
