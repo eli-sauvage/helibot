@@ -17,7 +17,7 @@ module.exports = function(sqlConn, messageInstance){
     socket.connect("wss://gateway.discord.gg/?v=8&encoding=json")
 
     function onMessage(msg, c){
-        l(msg)
+        // if(msg.op !=0)l(msg)
         if(msg.op == 10){
             setInterval(()=>c.send(JSON.stringify({op:1, d:lastS})),msg.d.heartbeat_interval)
         }
