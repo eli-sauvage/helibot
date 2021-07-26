@@ -13,7 +13,7 @@ async function computeGlobalScore(listOfIDs, sqlCOnn) {
         fetch(`https://euw1.api.riotgames.com/lol/league/v4/entries/by-summoner/${id}?api_key=RGAPI-71a0fc01-41bd-4d41-a99e-d403ab07e6ce`)
             .then((res) => res.json())
             .then((body) => {
-                console.log(body)
+                // console.log(body)
                 if(!body || !body[0] || !body[0].queueType){
                     length--
                     res()
