@@ -1,9 +1,10 @@
 module.exports = class SqlQueries{
     constructor(){
-        this.init()
+        // this.init()
     }
     async init(){
         this.sql = await new (require("./sqlconnector"))("helibot")
+        return this
     }
     newSession(memberID, name, duration){
         name = SqlQueries.safeString(name)

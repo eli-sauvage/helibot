@@ -24,7 +24,8 @@
     "nedb": "^1.8.0",
     "node-fetch": "^2.6.0",
     "prom-client": "^13.0.0",
-    "shelljs": "^0.8.3"
+    "shelljs": "^0.8.3",
+    "websocket": "^1.0.34"
   },
   "engines": {
     "node": "8.x"
