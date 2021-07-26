@@ -25,11 +25,11 @@ async function main(){
                 embed.addField(player.name + ":", `${player.tier} ${player.rank}, ${player.lp}LP`,true)
         }
       // embed.setFooter(roles.toString())
-        if(message)
-            message.edit(embed)
-        else
+        // if(message)
+            // message.edit(embed)
+        // else
             message = channel.send(embed)
-        return true
+        // return true
     }
 }
 module.exports = {init, main}
