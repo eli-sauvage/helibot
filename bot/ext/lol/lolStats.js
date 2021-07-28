@@ -10,7 +10,7 @@ async function computeGlobalScore(listOfIDs, sqlCOnn) {
     for (id of listOfIDs) {
         promises.push(new Promise(async (res, rej) => {
         // let id = await getID(item)
-        fetch(`https://euw1.api.riotgames.com/lol/league/v4/entries/by-summoner/${id}?api_key=RGAPI-71a0fc01-41bd-4d41-a99e-d403ab07e6ce`)
+        fetch(`https://euw1.api.riotgames.com/lol/league/v4/entries/by-summoner/${id}?api_key=${require("../../../token").lol}`)
             .then((res) => res.json())
             .then((body) => {
                 // console.log(body)
@@ -55,7 +55,7 @@ async function computeGlobalScore(listOfIDs, sqlCOnn) {
     return obj
 }
 async function getID(pseudo){
-    let res = await fetch(`https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/${pseudo}?api_key=RGAPI-71a0fc01-41bd-4d41-a99e-d403ab07e6ce`)
+    let res = await fetch(`https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/${pseudo}?api_key=${require("../../../token").lol}`)
     body = await res.json()
     return body.id
 }
