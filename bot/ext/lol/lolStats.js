@@ -13,12 +13,13 @@ async function computeGlobalScore(sqlConn) {
             // let id = await getID(item)
             console.log(`https://euw1.api.riotgames.com/lol/league/v4/entries/by-summoner/${id}?api_key=${require("../../../token").lol}`)
             let response = await fetch(`https://euw1.api.riotgames.com/lol/league/v4/entries/by-summoner/${id}?api_key=${require("../../../token").lol}`)
-            let body = await response.json()//.catch(console.log)
-            if(body.status.status_code != 200){
+            if(!response.ok){
                 console.log("error code")
+                let body = await response.json().catch(console.error)
                 console.error(body.status.status_code || body)
                 return
             }
+            let body = await response.json()//.catch(console.log)
             if(!body || !body[0] || !body[0].queueType){
                 length--
                 res()
@@ -46,6 +47,7 @@ async function computeGlobalScore(sqlConn) {
         }))
     }
     await Promise.all(promises)
+    if(length == 0) return{moyTier:0, moyRank:0, moyleaguePoints:0, players:[]}
     moyenne = totRank / length
     let obj = {
         moyTier : Object.keys(tierValue).find(key => tierValue[key] === Math.floor(moyenne / 400)),
