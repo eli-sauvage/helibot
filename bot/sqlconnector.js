@@ -1,7 +1,7 @@
 module.exports = class sql{    
     constructor(db){
         return new Promise((res, rej)=>{
-            this.mySQl = require('mysql')
+            this.mySQl = require('mysql2')
             this.conn = this.mySQl.createConnection({
                 host: '5.188.70.92', 
                 port:'3306',
