@@ -3,7 +3,7 @@ module.exports = class sql{
         return new Promise((res, rej)=>{
             this.mySQl = require('mysql')
             this.conn = this.mySQl.createConnection({
-                host: '77.151.84.172', 
+                host: '5.188.70.92', 
                 port:'3306',
                 user:'bot',
                 password: require("../token").sql,
