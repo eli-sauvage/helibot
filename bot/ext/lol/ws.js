@@ -46,7 +46,7 @@ module.exports = function(sqlConn, messageInstance){
                 fetch(`https://discord.com/api/v8/interactions/${msg.d.id}/${msg.d.token}/callback`,{
                         method:"POST",
                         headers:headers,
-                        body:JSON.stringify({type:4, data:{content:res, flags:1<<6}})
+                        body:JSON.stringify({type:4, data:{content:res}})
                     }).then(console.log)
             }
 
