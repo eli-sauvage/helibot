@@ -26,7 +26,7 @@ async function main(force){
             // message.edit(embed)
         // else
         await channel.send(embed)
-        sqlConn.query(`UPDATE storedData SET data = "${JSON.stringify(stats)}" WHERE name = "lastLolMessage"`)
+        sqlConn.query(`UPDATE storedData SET data = '${JSON.stringify(stats)}' WHERE name = "lastLolMessage"`)
         // return true
     }
 }
