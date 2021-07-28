@@ -55,7 +55,7 @@ async function computeGlobalScore(sqlConn) {
         moyleaguePoints : Math.floor(Math.floor(moyenne % 400) % 100),
         players:players
     }
-    sqlConn.query(`INSERT INTO lolStats (rank, tier, LP, time) VALUES("${obj.moyRank}", "${obj.moyTier}" , ${obj.moyleaguePoints}, now())`)
+    sqlConn.query(`INSERT INTO lolStats (\`rank\`, tier, LP, time) VALUES("${obj.moyRank}", "${obj.moyTier}" , ${obj.moyleaguePoints}, now())`)
 
     return obj
 }
