@@ -7,8 +7,7 @@ function init(_sqlConn, client){
     main(sqlConn, channel)
 }
 async function main(){
-    let IDs = await sqlConn.getColumn("SELECT lolID from LolIDs")
-    let stats =  await require("./lolStats").computeGlobalScore(IDs, sqlConn)
+    let stats =  await require("./lolStats").computeGlobalScore(sqlConn)
     if(!stats.moyTier || !stats.moyRank || stats.moyleaguePoints==undefined){
         return false
     }else{
