@@ -42,11 +42,11 @@ module.exports = function(sqlConn, messageInstance){
                     }).then(console.log)
                 })()
             else if(msg.d.data.name == "refresh_lol_score"){
-                let res = messageInstance.main()?"bien mis à jour":"réesayez plus tard"
+                let res = messageInstance.main(true)?"bien mis à jour":"réesayez plus tard"
                 fetch(`https://discord.com/api/v8/interactions/${msg.d.id}/${msg.d.token}/callback`,{
                         method:"POST",
                         headers:headers,
-                        body:JSON.stringify({type:4, data:{content:"bien mis à jour", flags:1<<6}})
+                        body:JSON.stringify({type:4, data:{content:res, flags:1<<6}})
                     }).then(console.log)
             }
 

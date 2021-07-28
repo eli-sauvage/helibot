@@ -3,31 +3,30 @@ function init(_sqlConn, client){
     sqlConn = _sqlConn
     channel =  client.guilds.cache.get(require("../../const").guildId).channels.cache.get("869264655124672652")//")672858838810230799
     // runEveryQuartDHeure(()=>console.log("ui"))
-    setInterval(()=>main(sqlConn, channel), 60*60*1000)
-    main(sqlConn, channel)
+    setInterval(()=>main(false), 60*60*1000)
+    main(false)
 }
-async function main(){
+async function main(force){
     let stats =  await require("./lolStats").computeGlobalScore(sqlConn)
     if(!stats.moyTier || !stats.moyRank || stats.moyleaguePoints==undefined){
         return false
-    }else{
+    }else if(!force && await sqlConn.getSingleVal("SELECT data FROM storedData WHERE name = 'lastLolMessage'") != JSON.stringify(stats)){
         let embed = new (require("discord.js").MessageEmbed)()
         .setAuthor(
           "Helibot",
           "https://images-na.ssl-images-amazon.com/images/I/615Q1Ms%2Bb4L._SX425_.jpg"
         )
         .setTitle(`__**Le Molec est ${stats.moyTier} ${stats.moyRank}, ${stats.moyleaguePoints}LP**__`)
-        //.setURL("http://77.151.84.172:2832/")
         .setColor(0)
         .setDescription("Elo des joueurs :")
         for(player of stats.players.sort((a,b)=>b.tot - a.tot).slice(0, 24)){
                 embed.addField(player.name + ":", `${player.tier} ${player.rank}, ${player.lp}LP`,true)
         }
-      // embed.setFooter(roles.toString())
         // if(message)
             // message.edit(embed)
         // else
-            message = channel.send(embed)
+        await channel.send(embed)
+        sqlConn.query(`UPDATE storedData SET data = "${JSON.stringify(stats)}" WHERE name = "lastLolMessage"`)
         // return true
     }
 }
