@@ -62,8 +62,8 @@ async function computeGlobalScore(sqlConn) {
 async function getID(pseudo){
     let res = await fetch(`https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/${pseudo}?api_key=${require("../../../token").lol}`)
     body = await res.json()
-    console.log("id")
-    console.log(body)
+    //console.log("id")
+    //console.log(body)
     return body.id
 }
 module.exports = {getID, computeGlobalScore}
