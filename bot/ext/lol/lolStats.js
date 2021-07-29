@@ -11,7 +11,7 @@ async function computeGlobalScore(sqlConn) {
     for (id of listOfIDs) {
         promises.push(new Promise(async (res, rej) => {
             // let id = await getID(item)
-            console.log(`https://euw1.api.riotgames.com/lol/league/v4/entries/by-summoner/${id}?api_key=${require("../../../token").lol}`)
+            //console.log(`https://euw1.api.riotgames.com/lol/league/v4/entries/by-summoner/${id}?api_key=${require("../../../token").lol}`)
             let response = await fetch(`https://euw1.api.riotgames.com/lol/league/v4/entries/by-summoner/${id}?api_key=${require("../../../token").lol}`)
             if(!response.ok){
                 console.log("error code")
