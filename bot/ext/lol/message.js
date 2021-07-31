@@ -10,7 +10,7 @@ async function main(force){
     let stats =  await require("./lolStats").computeGlobalScore(sqlConn)
     if(!stats.moyTier || !stats.moyRank || stats.moyleaguePoints==undefined){
         return false
-    }else if(!force && await sqlConn.getSingleVal("SELECT data FROM storedData WHERE name = 'lastLolMessage'") != JSON.stringify(stats)){
+    }else if(!force && await sqlConn.getSingleVal("SELECT data FROM storedData WHERE name = 'lastLolMessage'") != stats.moyTier + stats.moyRank + stats.moyleaguePoints){
         let embed = new (require("discord.js").MessageEmbed)()
         .setAuthor(
           "Helibot",
@@ -26,7 +26,7 @@ async function main(force){
             // message.edit(embed)
         // else
         await channel.send(embed)
-        sqlConn.query(`UPDATE storedData SET data = '${JSON.stringify(stats)}' WHERE name = "lastLolMessage"`)
+        sqlConn.query(`UPDATE storedData SET data = '${stats.moyTier + stats.moyRank + stats.moyleaguePoints}' WHERE name = "lastLolMessage"`)
         // return true
     }
 }

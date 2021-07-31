@@ -48,7 +48,7 @@ async function computeGlobalScore(sqlConn) {
     }
     await Promise.all(promises)
     if(length == 0) return{moyTier:0, moyRank:0, moyleaguePoints:0, players:[]}
-    moyenne = totRank / length
+    let moyenne = totRank / length
     let obj = {
         moyTier : Object.keys(tierValue).find(key => tierValue[key] === Math.floor(moyenne / 400)),
         moyRank : Object.keys(rankValue).find(key => rankValue[key] === Math.floor(Math.floor(moyenne % 400) / 100)),
