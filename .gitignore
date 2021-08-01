@@ -1,5 +1,5 @@
 .env 
-token.js
+token.ts
 node_modules/
 package-lock.json
 save.json
