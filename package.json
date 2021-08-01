@@ -1,41 +1,31 @@
 {
   "name": "helibot",
-  "version": "0.0.1",
+  "version": "1.0.0",
+  "description": "",
   "main": "main.js",
   "scripts": {
-    "start": "node --trace-warnings main.js"
-  },
-  "dependencies": {
-    "@cubejs-backend/mongobi-driver": "^0.25.20",
-    "@cubejs-backend/server-core": "^0.25.20",
-    "body-parser": "^1.19.0",
-    "chart.js-image": "^5.6.0",
-    "cors": "^2.8.5",
-    "discord": "^0.8.2",
-    "discord.js": "^12.5.1",
-    "dotenv": "^8.2.0",
-    "express": "^4.17.1",
-    "express-generator": "^4.16.1",
-    "fs": "0.0.1-security",
-    "http": "0.0.0",
-    "https": "^1.0.0",
-    "mongodb": "^3.3.3",
-    "mysql": "^2.18.1",
-    "nedb": "^1.8.0",
-    "node-fetch": "^2.6.0",
-    "prom-client": "^13.0.0",
-    "shelljs": "^0.8.3",
-    "websocket": "^1.0.34"
-  },
-  "engines": {
-    "node": "8.x"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
-    "url": "https://github.com/elicolh/helibot"
+    "type": "git",
+    "url": "git+https://github.com/elicolh/helibot.git"
   },
-  "keywords": [
-    "node",
-    "express",
-    "discord"
-  ]
+  "author": "elicolh",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/elicolh/helibot/issues"
+  },
+  "homepage": "https://github.com/elicolh/helibot#readme",
+  "dependencies": {
+    "@types/node": "^16.4.10",
+    "discord.js": "^12.5.3",
+    "mysql2": "^2.2.5",
+    "node-fetch": "^2.6.1",
+    "ts-node-dev": "^1.1.8",
+    "websocket": "^1.0.34"
+  },
+  "devDependencies": {
+    "@types/node-fetch": "^2.5.12",
+    "@types/websocket": "^1.0.4"
+  }
 }
