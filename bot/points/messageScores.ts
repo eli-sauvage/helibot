@@ -1,27 +1,28 @@
 import {Guild, TextChannel, MessageEmbed, Client, Message} from 'discord.js'
-import './sqlQueries'
+import '../sql/sqlQueries'
 import { Points } from './points';
-import { guildId, scoreChannelId } from './const';
+import { Roles } from './roles';
 const c = (e:string)=>{console.error(e);debugger;}
 export class MessageScores{
     points:Points
-    guild:Guild | undefined
-    channel:TextChannel | undefined
-    constructor(client:Client, points:Points){
+    guild:Guild
+    channel:TextChannel
+    constructor(client:Client, points:Points, guild:Guild, channel:TextChannel){
         this.points = points
-        let guild = client.guilds.cache.find(e=>e.id == guildId)
-        if(!guild){
-            console.log("guild not found")
-            process.exit()
-        }
         this.guild = guild
-        this.channel = this.guild.channels.cache.find(e => e.id == scoreChannelId) as unknown as TextChannel;
+        this.channel = channel
         this.init(client)
     }
     async init(client:Client){
         // sqlQueries = await sqlQueries.init()
         //deleting old messages
-        this.channel!.messages.cache//then(messages=>messages.array().forEach(m=>m.delete().catch(c))).catch(c)
+        this.channel.messages.cache//then(messages=>messages.array().forEach(m=>m.delete().catch(c))).catch(c)
+        let messages
+        while((messages = await this.channel.messages.fetch({limit:100})).size != 0){
+            for(let message of messages.array()){
+                await message.delete()
+            }
+        }
         this.setupInterval()
     }
 
@@ -32,12 +33,11 @@ export class MessageScores{
             if(message)
                 message.edit(content).catch(()=>{message = null; return})
             else
-                message = await this.channel!.send(content)
+                message = await this.channel.send(content)
         }, 3000)
     }
     async makeEmbed(){
         let scores = await this.points.exportPoints()
-        scores.forEach(e=>e.Points = e.Points/60)
         scores.sort((a, b) => b.Points - a.Points)
         scores.forEach(e => {
             let a = e.User;
@@ -53,8 +53,8 @@ export class MessageScores{
             "Helibot",
             "https://images-na.ssl-images-amazon.com/images/I/615Q1Ms%2Bb4L._SX425_.jpg"
           )
-          .setTitle("http://77.151.84.172:2832/")//https://murmuring-dawn-90139.herokuapp.com (pour tous les scores)")
-          .setURL("http://77.151.84.172:2832/")
+          .setTitle("http://5.188.70.92:2832/")//https://murmuring-dawn-90139.herokuapp.com (pour tous les scores)")
+          .setURL("http://5.188.70.92:2832/")
           .setColor(0)
           .setDescription("scores des 15 premiers :")
           .addField("\u200b","\u200b",true);
@@ -67,7 +67,7 @@ export class MessageScores{
             if(scores[i])
                 embed.addField("**#"+(i+1)+"**" + scores[i].Name + ":","**" + Math.round(scores[i].Points) + "**",true)
         }
-        // embed.setFooter(roles.toString())
+        embed.setFooter(Roles.toString())
         return embed;
     }
 }

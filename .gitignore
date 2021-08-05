@@ -8,3 +8,6 @@ ssl/
 .vscode/*
 saves/
 TODO
+out
+test.sh
+ecosystem.config.js

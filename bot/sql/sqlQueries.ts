@@ -17,7 +17,7 @@ export class SqlQueries{
     }
     newSession(memberID:string, name:string, duration:number){
         name = SqlQueries.safeString(name)
-        console.log(`end of session for ${name}`)
+        // console.log(`end of session for ${name}`)
         return  Promise.all([
             this.sql!.query(`INSERT INTO Session (User,  DisconnectionTime, Point, Name) VALUES (${memberID}, now(), ${duration}, "${name}")`).catch(console.error),
             this.sql!.query(`UPDATE Points SET Points = Points + ${duration} WHERE User=${memberID}`)

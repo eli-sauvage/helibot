@@ -1,6 +1,6 @@
 import fetch from "node-fetch"
-import {lol} from '../../../token'
-import { sql } from "../../sqlconnector"
+import {lol} from '../../token'
+import { sql } from "../sql/sqlconnector"
 
 let tierValue = { 'IRON': 0, 'BRONZE': 1, 'SILVER': 2, 'GOLD': 3 }
 type tier ="IRON" |"BRONZE" | "SILVER" | "GOLD"
@@ -8,8 +8,8 @@ let rankValue = { 'IV': 0, 'III': 1, 'II': 2, 'I': 3 }
 type rank = "IV" | 'III' | "II" | "I"
 
 export interface stats{
-    moyTier:number,
-    moyRank:number,
+    moyTier:string,
+    moyRank:string,
     moyleaguePoints:number,
     players:{
         name:string,
@@ -19,7 +19,7 @@ export interface stats{
         tot:number
     }[]
 }
-async function computeGlobalScore(sqlConn:sql) {
+export async function computeGlobalScore(sqlConn:sql) {
     let listOfIDs = await sqlConn.getColumn("SELECT lolID from LolIDs") as number[]
     let totRank = 0
     let moyRank = 0
@@ -29,12 +29,12 @@ async function computeGlobalScore(sqlConn:sql) {
     for (let id of listOfIDs) {
         promises.push(new Promise<void>(async (res, rej) => {
             // let id = await getID(item)
-            //console.log(`https://euw1.api.riotgames.com/lol/league/v4/entries/by-summoner/${id}?api_key=${require("../../../token").lol}`)
             let response = await fetch(`https://euw1.api.riotgames.com/lol/league/v4/entries/by-summoner/${id}?api_key=${lol}`)
             if(!response.ok){
                 console.log("error code")
                 let body = await response.json().catch(console.error)
                 console.error(body.status.message || body)
+                rej("error from lol api : " + body.status.message || body)
                 return
             }
             let body = await response.json()//.catch(console.log)
@@ -64,21 +64,24 @@ async function computeGlobalScore(sqlConn:sql) {
             res()
         }))
     }
-    await Promise.all(promises)
-    if(length == 0) return{moyTier:0, moyRank:0, moyleaguePoints:0, players:[]}
+    try{await Promise.all(promises)}
+    catch(e){
+        console.error("error : " + e)
+        return 
+    }
+    if(length == 0) return{moyTier:'', moyRank:'', moyleaguePoints:0, players:[]}
     let moyenne = totRank / length
     let obj = {
         moyTier : Object.keys(tierValue).find(key => tierValue[key as tier] === Math.floor(moyenne / 400)),
         moyRank : Object.keys(rankValue).find(key => rankValue[key as rank] === Math.floor(Math.floor(moyenne % 400) / 100)),
         moyleaguePoints : Math.floor(Math.floor(moyenne % 400) % 100),
         players:players
-    }
+    } as stats
     sqlConn.query(`INSERT INTO lolStats (\`rank\`, tier, LP, time) VALUES("${obj.moyRank}", "${obj.moyTier}" , ${obj.moyleaguePoints}, now())`)
-
     return obj
 }
-async function getID(pseudo:string){
-    let res = await fetch(`https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/${pseudo}?api_key=${require("../../../token").lol}`)
+export async function getID(pseudo:string){
+    let res = await fetch(`https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/${pseudo}?api_key=${lol}`)
     let body = await res.json()
     //console.log("id")
     //console.log(body)

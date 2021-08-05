@@ -1,5 +1,5 @@
 import * as mySql from 'mysql2'
-import {sql as sqlToken} from '../token'
+import {sql as sqlToken} from '../../token'
 export class sql{
     conn:mySql.Connection
     constructor(db:string){
