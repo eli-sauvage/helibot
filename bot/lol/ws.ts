@@ -72,35 +72,7 @@ export function Ws(sqlConn:sql, message:LolMessage){
         }
         if(msg.s)lastS=msg.s
     }
-    // function socketConnectAndSetListeners():void{
-    //     socket.on('connect', c => {
-    //         c.on("message", m => { if (m.type == "utf8") onMessage(JSON.parse(m.utf8Data), c) })
-    //         c.on("error", m => console.log("ws error" + m))
-    //         c.on("close", (c, m) => {
-    //             console.log("ws closed " + c + " " + m)
-    //             socketConnectAndSetListeners()
-    //         })
-    //         // connectWs(c)
-    //     })
-    //     socket.connect("wss://gateway.discord.gg/?v=8&encoding=json")
-    // }
-    // function connectWs(c:connection){
-    //     l("ws connecting")
-    //     c.send(JSON.stringify({
-    //         "op": 2,
-    //         "d": {
-    //             "token": discordToken,
-    //             "intents": 1<<4,
-    //             "properties": {
-    //                 "$os": "windows",
-    //                 "$browser": "disco",
-    //                 "$device": "disco"
-    //             }
-    //         },
-    //         "s": null,
-    //         "t": null
-    //     }))
-    // }
+
     async function initiateWsConn(){
         await new Promise<void>((fres, frej)=>{
             socket.on('connect', async c => {
@@ -155,9 +127,8 @@ export function Ws(sqlConn:sql, message:LolMessage){
                 // c.on("message", m => { if (m.type == "utf8") onMessage(JSON.parse(m.utf8Data), c) })
                 c.on("close", (c, m) => {
                     console.log("ws closed " + c + " " + m)
-                    // socketConnectAndSetListeners()
+                    initiateWsConn()
                 })
-                // connectWs(c)
                 fres()
             })
             socket.connect("wss://gateway.discord.gg/?v=8&encoding=json")

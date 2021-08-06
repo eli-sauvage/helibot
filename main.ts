@@ -9,7 +9,7 @@ import { Consts } from './bot/consts';
 import { Website } from './bot/website/webSite';
 import { Poll } from './bot/website/poll';
 import { Roles } from './bot/points/roles';
-import { initVocaux } from './bot/vocaux';
+import { InitVocaux } from './bot/vocaux';
 
 console.log("starting")
 
@@ -50,13 +50,14 @@ async function start(){
     //starting websocket
     Ws(query.sql, msg)
     //starting vocaux
-    initVocaux(consts.guild, client, consts.vocCategory, consts.generalVoc)
+    let voc = new InitVocaux(consts.guild, consts.vocCategory, consts.generalVoc)
 
 
 
     //setting up events
     client.on("voiceStateUpdate", (oldState, newState)=>{
         points.onVoiceUpdate(oldState, newState)
+        voc.testChannels()
     })
     client.on("guildMemberRemove", (memb)=>{
         if(memb.user)consts.generalChannel.send(memb.user.username + " a pris la mouche (a quitté " + memb.guild.name + ")")
