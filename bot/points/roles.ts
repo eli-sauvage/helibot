@@ -22,7 +22,7 @@ export class Roles {
         let currentPoints = await this.points.exportPoints()
         for (let point of currentPoints) {
             let guildUser = this.guild.members.cache.find(memb => memb.id == point.User)
-            if (!guildUser) break
+            if (!guildUser) continue
             let userRoleIds = guildUser.roles.cache.map(role => role.id)
             for (let role of rolesList) {
                 if (point.Points >= role.seuil) {
