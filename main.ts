@@ -46,7 +46,7 @@ async function start(){
     //starting poll
     let poll = new Poll(consts.pollChannel)
     //starting website
-    new Website(poll)
+    new Website(poll, points)
     //starting websocket
     Ws(query.sql, msg)
     //starting vocaux

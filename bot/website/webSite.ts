@@ -1,13 +1,16 @@
 import express from 'express'
 import path from 'path'
 import { Poll } from './poll'
+import { Points } from '../points/points'
 
 
 export class Website{
     app:express.Application
     port:number
     poll:Poll
-    constructor(poll:Poll){
+    points:Points
+    constructor(poll:Poll,points:Points){
+	this.points = points
         this.poll = poll
         this.app = express()
         this.app.use(express.static(path.resolve(__dirname + "/../../../views/")))
@@ -16,8 +19,11 @@ export class Website{
         this.setup()
     }
     setup(){
-        this.app.get('/', (req, res) => {
-            res.send('En construction')
+        this.app.get('/', async (req, res) => {
+            res.sendFile("./../../views/index.html")
+        })
+        this.app.get('/points', async (req, res) => {
+            res.send(await this.points.exportPoints())
         })
         this.app.get('/poll', (req, res) => {
             res.sendFile(path.resolve(__dirname + "/../../../views/poll.html"))
