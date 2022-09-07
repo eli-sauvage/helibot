@@ -4,7 +4,8 @@ export class sql{
     conn:mySql.Connection
     constructor(db:string){
         this.conn = mySql.createConnection({
-            host: '5.188.70.92', 
+            //host: '5.188.70.92', 
+	    host: 'localhost',
             port:3306,
             user:'bot',
             password: sqlToken,

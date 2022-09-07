@@ -20,10 +20,18 @@ export class Points {
         this.openedSessions = []
         this.operations = []
         this.init()
+	this.client.on("guildMemberAdd", async (member:GuildMember)=>{
+            let idsInPoints = (await this.sql.getPoints()).map(e => e.User);
+            if(!idsInPoints.includes(member.id)){
+                console.log(`adding ${member.user.username} to the DB`)
+                this.sql.addToPoints(member.id, member.user.username)
+            }
+        })
     }
     async init() {
         let idsInPoints = (await this.sql.getPoints()).map(e => e.User);
-        let members = this.guild.members.cache.array()
+	let membersColl = await this.guild.members.fetch()
+        let members = membersColl.array()
         let pr: Promise<any>[] = []
         members.forEach((member: GuildMember) => {
             if (Points.testCo(member.voice)) {

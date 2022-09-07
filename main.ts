@@ -48,7 +48,7 @@ async function start(){
     //starting website
     new Website(poll, points)
     //starting websocket
-    Ws(query.sql, msg)
+    //    Ws(query.sql, msg)
     //starting vocaux
     let voc = new InitVocaux(consts.guild, consts.vocCategory, consts.generalVoc)
 
