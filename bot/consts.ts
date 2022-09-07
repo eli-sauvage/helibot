@@ -1,6 +1,6 @@
 let guildId = '532956456492728320'
 let scoreChannelId = "730526039570251807"
-let generalChannelId = "532956456492728322"
+let generalChannelId = "729797578866163822"
 let ancienBot = '672858838810230799'
 let lol = '869264655124672652'
 let pollChannel = "685183865437814976"
