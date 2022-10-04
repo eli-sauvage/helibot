@@ -1,4 +1,5 @@
 # helibot : depuis début 2019
+actuellement hébergé sur une VM du Google Cloud
 
 Ceci est un bot discord dont les rôles sont les suivants
 - compter le score des membres : 1 point = 1 minute passée sur le canal vocal du serveur discord
