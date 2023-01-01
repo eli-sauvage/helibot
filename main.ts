@@ -42,7 +42,7 @@ async function start(){
     //starting roles manager
     new Roles(consts.guild, points)
     //starting lol message
-    let msg = new LolMessage(query.sql, client, consts.lolChannel)
+    //let msg = new LolMessage(query.sql, client, consts.lolChannel)
     //starting poll
     let poll = new Poll(consts.pollChannel)
     //starting website
