@@ -53,8 +53,8 @@ export class MessageScores{
             "Helibot",
             "https://images-na.ssl-images-amazon.com/images/I/615Q1Ms%2Bb4L._SX425_.jpg"
           )
-          .setTitle("http://5.188.70.92:2832/")//https://murmuring-dawn-90139.herokuapp.com (pour tous les scores)")
-          .setURL("http://5.188.70.92:2832/")
+          .setTitle("https://www.molec.fr/helicentre")//https://murmuring-dawn-90139.herokuapp.com (pour tous les scores)")
+          .setURL("https://www.molec.fr/helicentre")
           .setColor(0)
           .setDescription("scores des 15 premiers :")
           .addField("\u200b","\u200b",true);

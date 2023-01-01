@@ -41,7 +41,7 @@ envoi.addEventListener("click", () => {
     e => e.value
   );
   if (question == "" || rep.includes("")) return;
-    fetch("http://5.188.70.92:2832/poll", {
+    fetch("https://helibot.molec.fr/poll", {
     method: "POST",
     headers: {
       Accept: "application/json",
