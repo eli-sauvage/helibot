@@ -1,0 +1,40 @@
+version: "3"
+
+services:
+  db:
+    image: mariadb:10.6.16
+    environment:
+      MARIADB_USER: $MARIADB_USER
+      MARIADB_PASSWORD: $MARIADB_PASSWORD
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: true
+      MARIADB_DATABASE: $MARIADB_DATABASE
+    volumes:
+      - helibot-sql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/healthcheck.sh", "--connect"]
+      retries: 10
+      interval: 5s
+    networks:
+      - helibot
+  helibot:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    image: helibot:latest
+    depends_on:
+      db:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: rebuild
+          path: ./Cargo.toml
+        - action: rebuild
+          path: ./src
+    networks:
+      - helibot
+
+volumes:
+  helibot-sql-data:
+
+networks:
+  helibot:
