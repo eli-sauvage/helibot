@@ -8,7 +8,9 @@ pub enum HelibotError{
     #[error("Sqlx error")]
     Sqlx(#[from] sqlx::error::Error),
     #[error(transparent)]
-    EnvVarError(EnvVarError)
+    EnvVarError(EnvVarError),
+    #[error("rocket errror")]
+    RocketError(#[from] rocket::Error)
 }
 
 #[derive(Error, Debug)]

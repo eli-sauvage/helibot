@@ -10,3 +10,4 @@ sqlx = { version = "0.7", features = [ "runtime-tokio", "mysql" ] }
 tokio = { version = "1", features = ["full"]}
 dotenv = "0.15"
 thiserror = "1.0"
+rocket="0.5"

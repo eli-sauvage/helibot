@@ -30,6 +30,8 @@ services:
           path: ./Cargo.toml
         - action: rebuild
           path: ./src
+    ports:
+      - 8000:8000
     networks:
       - helibot
 

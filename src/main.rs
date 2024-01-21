@@ -3,8 +3,9 @@ use errors::EnvVarError;
 use sqlx::mysql::MySqlPoolOptions;
 use std::env;
 mod errors;
+use rocket::fs::{relative, FileServer};
 
-#[tokio::main]
+#[rocket::main]
 async fn main() -> Result<(), errors::HelibotError> {
     let mysql_url = construct_msql_url().map_err(errors::HelibotError::EnvVarError)?;
     println!("{}", mysql_url);
@@ -15,6 +16,11 @@ async fn main() -> Result<(), errors::HelibotError> {
     let row: (i64,) = sqlx::query_as("SELECT 150").fetch_one(&pool).await?;
 
     assert_eq!(row.0, 150);
+
+    let _rocket = rocket::build()
+        .mount("/", FileServer::from(relative!("views")))
+        .launch()
+        .await?;
 
     Ok(())
 }
