@@ -9,8 +9,6 @@ pub enum HelibotError{
     Sqlx(#[from] sqlx::error::Error),
     #[error(transparent)]
     EnvVarError(EnvVarError),
-    #[error("rocket errror")]
-    RocketError(#[from] rocket::Error)
 }
 
 #[derive(Error, Debug)]
@@ -18,5 +16,7 @@ pub enum EnvVarError{
     #[error("could not convert os string to string")]
     OsString(OsString),
     #[error("the variable was not found")]
-    VarNotFound
+    VarNotFound,
+    #[error("dotenv module failed to load env")]
+    DotEnvModuleError
 }

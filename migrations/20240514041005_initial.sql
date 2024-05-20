@@ -1,0 +1,28 @@
+-- Add migration script here
+CREATE TABLE ActiveSessions (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    guild_id BIGINT UNSIGNED NOT NULL,
+    begin TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE ActiveSessions ADD CONSTRAINT uq_ActiveSessions UNIQUE(user_id, guild_id);
+
+
+CREATE TABLE Points (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    guild_id BIGINT UNSIGNED NOT NULL,
+    points INT UNSIGNED NOT NULL
+);
+
+ALTER TABLE Points ADD CONSTRAINT uq_Points UNIQUE(user_id, guild_id);
+
+CREATE TABLE SessionHistory (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    guild_id BIGINT UNSIGNED NOT NULL,
+    begin TIMESTAMP NOT NULL,
+    end TIMESTAMP NOT NULL,
+    points INT UNSIGNED NOT NULL
+);
