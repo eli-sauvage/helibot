@@ -18,13 +18,14 @@ struct Env {
 async fn main() -> Result<(), errors::HelibotError> {
     let env = retrieve_env().map_err(errors::HelibotError::EnvVarError)?;
     let pool = setup_db_connection(&env).await?;
-    let intents = GatewayIntents::GUILD_VOICE_STATES | GatewayIntents::GUILDS;
-    let handler = event_handler::Handler { pool };
 
-    let mut client = Client::builder(&env.discord_token, intents)
-        .event_handler(handler)
-        .await
-        .expect("Err creating client");
+    let mut client = Client::builder(
+        &env.discord_token,
+        GatewayIntents::GUILD_VOICE_STATES | GatewayIntents::GUILDS,
+    )
+    .event_handler(event_handler::Handler { pool })
+    .await
+    .expect("Err creating client");
 
     if let Err(why) = client.start().await {
         println!("Client error: {why:?}");
