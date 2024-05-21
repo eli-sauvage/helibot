@@ -55,7 +55,7 @@ impl ActiveSession {
             .assume_offset(self.begin.offset());
         let points_to_add = (now - self.begin).whole_seconds();
 
-        let new_points = points::add_points(self.user_id, self.guild_id, points_to_add)?;
+        let new_points = points::add_points(pool, self.user_id, self.guild_id, points_to_add).await?;
 
         //append in history
         sqlx::query!("INSERT INTO SessionHistory (user_id, guild_id, begin, end, points) VALUES(?, ?, ?, ?, ?)",
@@ -70,8 +70,6 @@ impl ActiveSession {
         sqlx::query!("DELETE FROM ActiveSessions WHERE id = ?", self.id)
             .execute(pool)
             .await?;
-
-        drop(self);
 
         Ok(())
     }

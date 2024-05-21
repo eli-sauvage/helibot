@@ -1,13 +1,13 @@
 use dotenv::dotenv;
-use errors::EnvVarError;
+use errors::{EnvVarError, HelibotError};
 use serenity::{all::GatewayIntents, Client};
-use sqlx::mysql::MySqlPoolOptions;
+use sqlx::{mysql::MySqlPoolOptions, MySql, Pool};
 use std::env;
 
 mod errors;
 mod event_handler;
-mod sessions;
 mod points;
+mod sessions;
 
 struct Env {
     mysql_url: String,
@@ -16,15 +16,8 @@ struct Env {
 
 #[tokio::main]
 async fn main() -> Result<(), errors::HelibotError> {
-    let env = construct_msql_url().map_err(errors::HelibotError::EnvVarError)?;
-    println!("{}", env.mysql_url);
-    let pool = MySqlPoolOptions::new()
-        .max_connections(5)
-        .connect(env.mysql_url.as_str())
-        .await?;
-    let row: (i64,) = sqlx::query_as("SELECT 150").fetch_one(&pool).await?;
-    assert_eq!(row.0, 150); //test connection
-
+    let env = retrieve_env().map_err(errors::HelibotError::EnvVarError)?;
+    let pool = setup_db_connection(&env).await?;
     let intents = GatewayIntents::GUILD_VOICE_STATES | GatewayIntents::GUILDS;
     let handler = event_handler::Handler { pool };
 
@@ -37,12 +30,20 @@ async fn main() -> Result<(), errors::HelibotError> {
         println!("Client error: {why:?}");
     }
 
-    println!("bot has joined");
-
     Ok(())
 }
 
-fn construct_msql_url() -> Result<Env, errors::EnvVarError> {
+async fn setup_db_connection(env: &Env) -> Result<Pool<MySql>, HelibotError> {
+    let pool = MySqlPoolOptions::new()
+        .max_connections(5)
+        .connect(env.mysql_url.as_str())
+        .await?;
+    let row: (i64,) = sqlx::query_as("SELECT 150").fetch_one(&pool).await?;
+    assert_eq!(row.0, 150); //test connection
+    Ok(pool)
+}
+
+fn retrieve_env() -> Result<Env, errors::EnvVarError> {
     dotenv().map_err(|_| EnvVarError::DotEnvModuleError)?;
     fn get_var(var: &str) -> Result<String, errors::EnvVarError> {
         env::var_os(var)

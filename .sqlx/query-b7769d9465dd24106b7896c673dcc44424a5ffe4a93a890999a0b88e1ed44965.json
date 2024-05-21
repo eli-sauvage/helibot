@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "INSERT INTO Points (user_id, guild_id, points) VALUES (?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "b7769d9465dd24106b7896c673dcc44424a5ffe4a93a890999a0b88e1ed44965"
+}

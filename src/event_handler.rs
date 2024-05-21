@@ -38,23 +38,18 @@ impl EventHandler for Handler {
 
         match voice_state_action{
             VoiceStateAction::Joined => {
-                match session {
-                    Some(_) => {}, //do nothing if session already exists
-                    None => {
-                        if let Err(e) = ActiveSession::create(&self.pool, user_id, guild_id).await{
-                            eprintln!("{:?}", e);
-                        }
+                if session.is_none(){
+                    if let Err(e) = ActiveSession::create(&self.pool, user_id, guild_id).await{
+                        eprintln!("{:?}", e);
                     }
+
                 }
             },
             VoiceStateAction::Quit => {
-                match session{
-                    Some(session) => {
-                        if let Err(e) = ActiveSession::terminate(session, &self.pool).await{
-                            eprintln!("{:?}", e);
-                        }
-                    },
-                    None => {} //do noting if session is already dead
+                if let Some(session) = session{
+                    if let Err(e) = ActiveSession::terminate(session, &self.pool).await{
+                        eprintln!("{:?}", e);
+                    }
                 }
             },
             VoiceStateAction::Unchanged => {}
@@ -97,8 +92,7 @@ impl VoiceStateAction {
             is_voice_channel(
                 ctx,
                 old_voice_state_opt
-                    .map(|old_state| old_state.channel_id)
-                    .flatten(),
+                    .and_then(|old_state| old_state.channel_id),
             )
             .await,
             is_voice_channel(ctx, new_voice_state.channel_id).await,
