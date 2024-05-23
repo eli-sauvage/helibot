@@ -33,6 +33,7 @@ async fn main() -> Result<(), errors::HelibotError> {
     .event_handler(event_handler::Handler {
         pool: Arc::new(RwLock::new(pool)),
         env,
+        username_manager: Default::default(),
         message_builder: Default::default(),
     })
     .await

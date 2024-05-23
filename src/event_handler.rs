@@ -1,7 +1,8 @@
 use std::time::Duration;
 
 use serenity::all::{
-    ChannelId, ChannelType, Context, EventHandler, Interaction, Ready, VoiceState,
+    ChannelId, ChannelType, Context, CreateInteractionResponseMessage, EventHandler, Interaction,
+    Ready, VoiceState,
 };
 use serenity::async_trait;
 use sqlx::{self, MySql, Pool};
@@ -11,13 +12,16 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::message::MessageBuilder;
+use crate::points;
 use crate::sessions::ActiveSession;
+use crate::usernames::UsernameManager;
 use crate::Env;
 
 pub struct Handler {
     pub pool: Arc<RwLock<Pool<MySql>>>,
     pub message_builder: Arc<RwLock<MessageBuilder>>,
     pub env: Env,
+    pub username_manager: Arc<RwLock<UsernameManager>>,
 }
 
 #[async_trait]
@@ -73,8 +77,15 @@ impl EventHandler for Handler {
         println!("helibot is online");
 
         let pool = self.pool.read().await;
+        *self.username_manager.write().await = match UsernameManager::create(&pool, &ctx).await {
+            Ok(uname_manager) => uname_manager,
+            Err(e) => {
+                eprintln!("could not create username manager: {e:?}");
+                return;
+            }
+        };
         *self.message_builder.write().await =
-            match MessageBuilder::new(&ctx, &pool, &ready, &__self.env.point_channel_name).await {
+            match MessageBuilder::new(&ctx, &ready, &__self.env.point_channel_name).await {
                 Ok(builder) => builder,
                 Err(e) => {
                     eprintln!("could not create new message builder : {e}");
@@ -84,6 +95,7 @@ impl EventHandler for Handler {
 
         let thread_pool = self.pool.clone();
         let thread_msg_builder = self.message_builder.clone();
+        let thread_username_manager = self.username_manager.clone();
         tokio::spawn(async move {
             let mut interval = interval(Duration::from_secs(60 * 3));
 
@@ -91,11 +103,13 @@ impl EventHandler for Handler {
                 tokio::select! {
                     _ = interval.tick() => {
                         let pool = thread_pool.read().await;
+                        let username_manager = thread_username_manager.read().await;
                         thread_msg_builder.write().await
                         .print_points_in_all_guilds(
                             &ctx.clone(),
                             &pool,
-                            ready.guilds.iter().map(|guild| &guild.id).collect()
+                            ready.guilds.iter().map(|guild| &guild.id).collect(),
+                            &username_manager
                         )
                         .await;
                     }
@@ -109,6 +123,7 @@ impl EventHandler for Handler {
             match component.data.custom_id.as_str() {
                 "refresh" => {
                     let pool = self.pool.read().await;
+                    let username_manager = self.username_manager.read().await;
                     self.message_builder
                         .write()
                         .await
@@ -116,6 +131,7 @@ impl EventHandler for Handler {
                             &ctx.clone(),
                             &pool,
                             ctx.cache.guilds().iter().collect(),
+                            &username_manager,
                         )
                         .await;
                     component
@@ -126,7 +142,29 @@ impl EventHandler for Handler {
                         .await
                         .unwrap();
                 }
-                "print_all" => {}
+                "print_all" => {
+                    //component.user.direct_message(cache_http, builder)
+                    if let Some(guild_id) = component.guild_id {
+                        let pool = self.pool.read().await;
+                        let username_manager = self.username_manager.read().await;
+                        if let Ok(table) =
+                            points::construct_points_md_table(&pool, &guild_id, &username_manager)
+                                .await
+                        {
+                            component
+                                .create_response(
+                                    ctx,
+                                    serenity::all::CreateInteractionResponse::Message(
+                                        CreateInteractionResponseMessage::new()
+                                            .content(format!("```md\n{}\n```", table))
+                                            .ephemeral(true),
+                                    ),
+                                )
+                                .await
+                                .unwrap();
+                        }
+                    }
+                }
                 _ => println!(
                     "received unknown component custom id on interaction {}",
                     component.data.custom_id

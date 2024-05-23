@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 
-use serenity::all::GuildId;
+use serenity::all::{GuildId, UserId};
 use sqlx::{types::time::OffsetDateTime, MySql, Pool};
 
-use crate::{errors::HelibotError, sessions::ActiveSession};
+use crate::{errors::HelibotError, sessions::ActiveSession, usernames::UsernameManager};
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Point {
@@ -87,4 +87,64 @@ pub async fn get_points_for_guild(
     });
 
     Ok(HashSet::from_iter(points.into_iter()))
+}
+
+type Username = String;
+
+pub fn parse_to_tuple(
+    username_manager: &UsernameManager,
+    points: &HashSet<Point>,
+) -> Vec<(Username, String)> {
+    let mut points: Vec<&Point> = points.iter().collect();
+    points.sort_by(|a, b| b.points.cmp(&a.points));
+    points
+        .iter()
+        .filter_map(|point| {
+            username_manager
+                .get_username_from_cache(GuildId::new(point.guild_id), UserId::new(point.user_id))
+                .map(|username| (username.to_string(), point.points.to_string()))
+        })
+        .collect()
+}
+
+pub async fn construct_points_md_table(
+    pool: &Pool<MySql>,
+    guild_id: &GuildId,
+    username_manager: &UsernameManager,
+) -> Result<String, HelibotError> {
+    let points = get_points_for_guild(pool, guild_id).await?;
+    let mut points_fmt = parse_to_tuple(username_manager, &points);
+    points_fmt.insert(0, ("User Name".into(), "Score".into()));
+    let longest_username_size = points_fmt
+        .iter()
+        .map(|(username, _)| username.len())
+        .max()
+        .unwrap_or(0)
+        + 2;
+    let longest_points_size = points_fmt
+        .iter()
+        .map(|(_, points)| points.len())
+        .max()
+        .unwrap_or(0)
+        + 2;
+    points_fmt.insert(
+        1,
+        (
+            "-".repeat(longest_username_size - 2),
+            "-".repeat(longest_points_size - 2),
+        ),
+    );
+
+    Ok(points_fmt
+        .iter()
+        .map(|(username, points)| {
+            format!(
+                "|{:username_width$}|{:points_width$}|\n",
+                format!(" {} ", username),
+                format!(" {} ", points),
+                username_width = longest_username_size,
+                points_width = longest_points_size
+            )
+        })
+        .fold("".to_owned(), |accumulator, current| accumulator + &current))
 }

@@ -1,7 +1,7 @@
 use serenity::{
     all::{
         ChannelId, Context, CreateButton, CreateEmbed, CreateEmbedFooter, CreateMessage,
-        EditMessage, GetMessages, GuildId, Message, ReactionType, Ready, Timestamp, UserId,
+        EditMessage, GetMessages, GuildId, Message, ReactionType, Ready, Timestamp,
     },
     futures::future::join_all,
 };
@@ -14,18 +14,14 @@ use std::collections::{HashMap, HashSet};
 #[derive(Default)]
 pub struct MessageBuilder {
     channel_ids: HashMap<GuildId, ChannelId>,
-    username_manager: UsernameManager,
     messages: HashMap<GuildId, (Message, HashSet<Point>)>,
 }
 impl MessageBuilder {
     pub async fn new(
         ctx: &Context,
-        pool: &Pool<MySql>,
         ready_state: &Ready,
         channel_name: &str,
     ) -> Result<MessageBuilder, HelibotError> {
-        let username_manager = UsernameManager::create(pool, ctx).await?;
-
         let guild_channels_future_iter =
             ready_state
                 .guilds
@@ -62,7 +58,6 @@ impl MessageBuilder {
 
         Ok(MessageBuilder {
             channel_ids,
-            username_manager,
             messages: HashMap::new(),
         })
     }
@@ -72,6 +67,7 @@ impl MessageBuilder {
         ctx: &Context,
         pool: &Pool<MySql>,
         guild_ids: Vec<&GuildId>,
+        username_manager: &UsernameManager,
     ) {
         for guild_id in guild_ids {
             let channel_id = match self.channel_ids.get(guild_id) {
@@ -90,7 +86,8 @@ impl MessageBuilder {
                 }
             };
 
-            let embed = build_point_message(&self.username_manager, &points);
+            let embed =
+                build_point_message(points::parse_to_tuple(username_manager, &points));
 
             let edit_result = match self.messages.get_mut(guild_id) {
                 Some(old_message) => {
@@ -138,37 +135,23 @@ async fn send_new_msg(
         .map_err(HelibotError::SerenityError)
 }
 
-fn build_point_message(username_manager: &UsernameManager, points: &HashSet<Point>) -> CreateEmbed {
-    let mut points: Vec<&Point> = points.iter().collect();
-    points.sort_by(|a, b| b.points.cmp(&a.points));
-    let mut points_parsed: Vec<(String, String)> = points
-        .iter()
-        .enumerate()
-        .filter_map(|(index, point)| {
-            username_manager
-                .get_username_from_cache(GuildId::new(point.guild_id), UserId::new(point.user_id))
-                .map(|username| {
-                    (
-                        format!("#{} {}", index + 1, username),
-                        point.points.to_string(),
-                    )
-                })
-        })
-        .collect();
+fn build_point_message(mut points: Vec<(String, String)>) -> CreateEmbed {
+    points = points.iter().enumerate().map(|(index, val)|{
+        (format!("#{} {}", index + 1, val.0), val.1.to_owned())
+    }).collect();
+    points.shrink_to(15);
 
-    points_parsed.shrink_to(15);
-
-    if points_parsed.len() > 2 {
-        points_parsed.insert(2, ("".into(), "".into()));
+    if points.len() > 2 {
+        points.insert(2, ("".into(), "".into()));
     }
-    if points_parsed.len() > 1 {
-        points_parsed.insert(1, ("".into(), "".into()));
+    if points.len() > 1 {
+        points.insert(1, ("".into(), "".into()));
     }
-    if !points_parsed.is_empty() {
-        points_parsed.insert(0, ("".into(), "".into()));
+    if !points.is_empty() {
+        points.insert(0, ("".into(), "".into()));
     }
 
-    let fields: Vec<(String, String, bool)> = points_parsed
+    let fields: Vec<(String, String, bool)> = points
         .iter()
         .map(|point| (point.to_owned().0, point.to_owned().1, true))
         .collect();
