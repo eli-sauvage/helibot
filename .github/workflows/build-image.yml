@@ -25,6 +25,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: build docker image
-        run: docker compose build
+        run: |
+          cp .env.template .env
+          docker compose build
       - name: upload image
         run: docker compose push
