@@ -122,12 +122,20 @@ async fn send_new_msg(
     embed: CreateEmbed,
 ) -> Result<Message, HelibotError> {
     delete_old_messages_in_channel(ctx, channel_id).await;
-    let buttons = create_buttons();
+    let mut refresh_button = CreateButton::new("refresh").label("refresh");
+    if let Ok(refresh_emoji) = ReactionType::try_from("🔄") {
+        refresh_button = refresh_button.emoji(refresh_emoji);
+    }
+
+    let mut print_all_button = CreateButton::new("print_all").label("afficher tous les scores");
+    if let Ok(scroll_emoji) = ReactionType::try_from("📜") {
+        print_all_button = print_all_button.emoji(scroll_emoji);
+    }
     let new_message = CreateMessage::new()
         .content("")
         .embed(embed)
-        .button(buttons.0)
-        .button(buttons.1);
+        .button(refresh_button)
+        .button(print_all_button);
 
     channel_id
         .send_message(&ctx.http, new_message)
@@ -201,18 +209,4 @@ async fn delete_old_messages_in_channel(ctx: &Context, channel_id: &ChannelId) {
             }
         }
     }
-}
-
-fn create_buttons() -> (CreateButton, CreateButton) {
-    let mut refresh_button = CreateButton::new("refresh").label("refresh now");
-    if let Ok(refresh_emoji) = ReactionType::try_from("🔄") {
-        refresh_button = refresh_button.emoji(refresh_emoji);
-    }
-
-    let mut print_all_button = CreateButton::new("print_all").label("diplay all scores");
-    if let Ok(scroll_emoji) = ReactionType::try_from("📜") {
-        print_all_button = print_all_button.emoji(scroll_emoji);
-    }
-
-    (refresh_button, print_all_button)
 }

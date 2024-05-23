@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use serenity::all::{Context, GuildId, UserId};
+use serenity::all::{Context, GuildId, Member, UserId};
 use sqlx::{MySql, Pool};
 
 use crate::{errors::HelibotError, points::Point};
@@ -25,10 +25,7 @@ impl UsernameManager {
             let guild_id = GuildId::new(point.guild_id);
             match UserId::new(point.user_id).to_user(ctx).await {
                 Ok(user) => {
-                    let username = match user.nick_in(ctx, guild_id).await {
-                        Some(name) => name,
-                        None => user.name,
-                    };
+                    let username = user.nick_in(ctx, guild_id).await.unwrap_or(user.name);
                     valid_users.insert((guild_id, user.id), username);
                 }
                 Err(e) => {
@@ -52,9 +49,13 @@ impl UsernameManager {
         })
     }
 
-    pub async fn refresh(&mut self, pool: &Pool<MySql>, ctx: &Context) -> Result<(), HelibotError> {
-        self.usernames_cached = UsernameManager::create(pool, ctx).await?.usernames_cached;
-        Ok(())
+    //pub async fn refresh(&mut self, pool: &Pool<MySql>, ctx: &Context) -> Result<(), HelibotError> {
+    //    self.usernames_cached = UsernameManager::create(pool, ctx).await?.usernames_cached;
+    //    Ok(())
+    //}
+
+    pub async fn add_user(&mut self, member: Member) {
+        self.usernames_cached.insert((member.guild_id, member.user.id), member.nick.unwrap_or(member.user.name));
     }
 
     pub fn get_username_from_cache(&self, guild_id: GuildId, user_id: UserId) -> Option<&str> {

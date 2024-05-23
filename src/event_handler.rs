@@ -1,8 +1,7 @@
 use std::time::Duration;
 
 use serenity::all::{
-    ChannelId, ChannelType, Context, CreateInteractionResponseMessage, EventHandler, Interaction,
-    Ready, VoiceState,
+    ChannelId, ChannelType, Context, CreateInteractionResponseMessage, EventHandler, Interaction, Member, Ready, VoiceState
 };
 use serenity::async_trait;
 use sqlx::{self, MySql, Pool};
@@ -26,6 +25,55 @@ pub struct Handler {
 
 #[async_trait]
 impl EventHandler for Handler {
+    async fn ready(&self, ctx: Context, ready: Ready) {
+        println!("helibot is online");
+
+        let pool = self.pool.read().await;
+        *self.username_manager.write().await = match UsernameManager::create(&pool, &ctx).await {
+            Ok(uname_manager) => uname_manager,
+            Err(e) => {
+                eprintln!("could not create username manager: {e:?}");
+                return;
+            }
+        };
+        *self.message_builder.write().await =
+            match MessageBuilder::new(&ctx, &ready, &__self.env.point_channel_name).await {
+                Ok(builder) => builder,
+                Err(e) => {
+                    eprintln!("could not create new message builder : {e}");
+                    return;
+                }
+            };
+
+        let thread_pool = self.pool.clone();
+        let thread_msg_builder = self.message_builder.clone();
+        let thread_username_manager = self.username_manager.clone();
+        tokio::spawn(async move {
+            let mut interval = interval(Duration::from_secs(60 * 3));
+
+            loop {
+                tokio::select! {
+                    _ = interval.tick() => {
+                        let pool = thread_pool.read().await;
+                        let username_manager = thread_username_manager.read().await;
+                        thread_msg_builder.write().await
+                        .print_points_in_all_guilds(
+                            &ctx.clone(),
+                            &pool,
+                            ready.guilds.iter().map(|guild| &guild.id).collect(),
+                            &username_manager
+                        )
+                        .await;
+                    }
+                }
+            }
+        });
+    }
+
+    async fn guild_member_addition(&self, _ctx: Context, member: Member){
+        self.username_manager.write().await.add_user(member).await;
+    }
+
     async fn voice_state_update(
         &self,
         ctx: Context,
@@ -71,51 +119,6 @@ impl EventHandler for Handler {
             }
             VoiceStateAction::Unchanged => {}
         }
-    }
-
-    async fn ready(&self, ctx: Context, ready: Ready) {
-        println!("helibot is online");
-
-        let pool = self.pool.read().await;
-        *self.username_manager.write().await = match UsernameManager::create(&pool, &ctx).await {
-            Ok(uname_manager) => uname_manager,
-            Err(e) => {
-                eprintln!("could not create username manager: {e:?}");
-                return;
-            }
-        };
-        *self.message_builder.write().await =
-            match MessageBuilder::new(&ctx, &ready, &__self.env.point_channel_name).await {
-                Ok(builder) => builder,
-                Err(e) => {
-                    eprintln!("could not create new message builder : {e}");
-                    return;
-                }
-            };
-
-        let thread_pool = self.pool.clone();
-        let thread_msg_builder = self.message_builder.clone();
-        let thread_username_manager = self.username_manager.clone();
-        tokio::spawn(async move {
-            let mut interval = interval(Duration::from_secs(60 * 3));
-
-            loop {
-                tokio::select! {
-                    _ = interval.tick() => {
-                        let pool = thread_pool.read().await;
-                        let username_manager = thread_username_manager.read().await;
-                        thread_msg_builder.write().await
-                        .print_points_in_all_guilds(
-                            &ctx.clone(),
-                            &pool,
-                            ready.guilds.iter().map(|guild| &guild.id).collect(),
-                            &username_manager
-                        )
-                        .await;
-                    }
-                }
-            }
-        });
     }
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
