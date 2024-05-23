@@ -4,7 +4,7 @@ use serenity::{all::GatewayIntents, Client};
 use sessions::ActiveSession;
 use sqlx::{mysql::MySqlPoolOptions, MySql, Pool};
 use std::{env, sync::Arc};
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 
 mod errors;
 mod event_handler;
@@ -31,7 +31,7 @@ async fn main() -> Result<(), errors::HelibotError> {
         GatewayIntents::GUILD_VOICE_STATES | GatewayIntents::GUILDS,
     )
     .event_handler(event_handler::Handler {
-        pool: Arc::new(Mutex::new(pool)),
+        pool: Arc::new(RwLock::new(pool)),
         env,
         message_builder: Default::default(),
     })

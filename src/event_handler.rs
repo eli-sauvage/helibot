@@ -1,22 +1,21 @@
 use std::time::Duration;
 
 use serenity::all::{
-    ChannelId, ChannelType, Context, EventHandler, Interaction,
-    Ready, VoiceState,
+    ChannelId, ChannelType, Context, EventHandler, Interaction, Ready, VoiceState,
 };
 use serenity::async_trait;
 use sqlx::{self, MySql, Pool};
 use tokio::time::interval;
 
 use std::sync::Arc;
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::RwLock;
 
 use crate::message::MessageBuilder;
 use crate::sessions::ActiveSession;
 use crate::Env;
 
 pub struct Handler {
-    pub pool: Arc<Mutex<Pool<MySql>>>,
+    pub pool: Arc<RwLock<Pool<MySql>>>,
     pub message_builder: Arc<RwLock<MessageBuilder>>,
     pub env: Env,
 }
@@ -29,7 +28,7 @@ impl EventHandler for Handler {
         old_state: Option<VoiceState>,
         new_state: VoiceState,
     ) {
-        let pool = self.pool.lock().await;
+        let pool = self.pool.read().await;
         let guild_id = match new_state.guild_id {
             Some(guild_id) => guild_id,
             _ => return,
@@ -73,7 +72,7 @@ impl EventHandler for Handler {
     async fn ready(&self, ctx: Context, ready: Ready) {
         println!("helibot is online");
 
-        let pool = self.pool.lock().await;
+        let pool = self.pool.read().await;
         *self.message_builder.write().await =
             match MessageBuilder::new(&ctx, &pool, &ready, &__self.env.point_channel_name).await {
                 Ok(builder) => builder,
@@ -86,12 +85,12 @@ impl EventHandler for Handler {
         let thread_pool = self.pool.clone();
         let thread_msg_builder = self.message_builder.clone();
         tokio::spawn(async move {
-            let mut interval = interval(Duration::from_secs(60*3));
+            let mut interval = interval(Duration::from_secs(60 * 3));
 
             loop {
                 tokio::select! {
                     _ = interval.tick() => {
-                        let pool = thread_pool.lock().await;
+                        let pool = thread_pool.read().await;
                         thread_msg_builder.write().await
                         .print_points_in_all_guilds(
                             &ctx.clone(),
@@ -109,7 +108,7 @@ impl EventHandler for Handler {
         if let Interaction::Component(component) = interaction {
             match component.data.custom_id.as_str() {
                 "refresh" => {
-                    let pool = self.pool.lock().await;
+                    let pool = self.pool.read().await;
                     self.message_builder
                         .write()
                         .await
