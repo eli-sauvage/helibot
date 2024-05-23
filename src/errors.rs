@@ -2,21 +2,24 @@ use std::ffi::OsString;
 
 use thiserror::Error;
 
-
 #[derive(Error, Debug)]
-pub enum HelibotError{
+pub enum HelibotError {
     #[error("Sqlx error")]
     Sqlx(#[from] sqlx::error::Error),
     #[error(transparent)]
     EnvVarError(EnvVarError),
+    #[error("points channel not found in guild {0}")]
+    PointChannelNotFound(u64),
+    #[error(transparent)]
+    SerenityError(#[from] serenity::all::Error),
 }
 
 #[derive(Error, Debug)]
-pub enum EnvVarError{
+pub enum EnvVarError {
     #[error("could not convert os string to string")]
     OsString(OsString),
     #[error("the variable was not found")]
     VarNotFound,
     #[error("dotenv module failed to load env")]
-    DotEnvModuleError
+    DotEnvModuleError,
 }

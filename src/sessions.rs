@@ -6,12 +6,39 @@ use crate::points;
 #[derive(Debug)]
 pub struct ActiveSession {
     id: u32,
-    user_id: u64,
-    guild_id: u64,
-    begin: OffsetDateTime,
+    pub user_id: u64,
+    pub guild_id: u64,
+    pub begin: OffsetDateTime,
 }
 
 impl ActiveSession {
+    pub async fn terminate(self, pool: &Pool<MySql>) -> Result<(), HelibotError> {
+        let now = sqlx::query!("SELECT current_timestamp")
+            .fetch_one(pool)
+            .await?
+            .current_timestamp
+            .assume_offset(self.begin.offset());
+        let points_to_add = (now - self.begin).whole_seconds();
+
+        let new_points =
+            points::add_points(pool, self.user_id, self.guild_id, points_to_add).await?;
+
+        //append in history
+        sqlx::query!("INSERT INTO SessionHistory (user_id, guild_id, begin, end, points) VALUES(?, ?, ?, ?, ?)",
+            self.user_id,
+            self.guild_id,
+            self.begin,
+            now,
+            new_points
+        ).execute(pool).await?;
+
+        //delete from active Sessions
+        sqlx::query!("DELETE FROM ActiveSessions WHERE id = ?", self.id)
+            .execute(pool)
+            .await?;
+
+        Ok(())
+    }
     pub async fn get(
         pool: &Pool<MySql>,
         user_id: u64,
@@ -27,6 +54,21 @@ impl ActiveSession {
         .await?;
         Ok(session)
     }
+
+    pub async fn get_all_active_sessions_for_guild(
+        pool: &Pool<MySql>,
+        guild_id: u64,
+    ) -> Result<Vec<ActiveSession>, HelibotError> {
+        let res = sqlx::query_as!(
+            ActiveSession,
+            "SELECT * from ActiveSessions WHERE guild_id = ?",
+            guild_id
+        )
+        .fetch_all(pool)
+        .await?;
+        Ok(res)
+    }
+
     pub async fn create(
         pool: &Pool<MySql>,
         user_id: u64,
@@ -47,30 +89,12 @@ impl ActiveSession {
         Ok(session)
     }
 
-    pub async fn terminate(self, pool: &Pool<MySql>) -> Result<(), HelibotError> {
-        let now = sqlx::query!("SELECT current_timestamp")
-            .fetch_one(pool)
-            .await?
-            .current_timestamp
-            .assume_offset(self.begin.offset());
-        let points_to_add = (now - self.begin).whole_seconds();
-
-        let new_points = points::add_points(pool, self.user_id, self.guild_id, points_to_add).await?;
-
-        //append in history
-        sqlx::query!("INSERT INTO SessionHistory (user_id, guild_id, begin, end, points) VALUES(?, ?, ?, ?, ?)",
-            self.user_id,
-            self.guild_id,
-            self.begin,
-            now,
-            new_points
-        ).execute(pool).await?;
-
-        //delete from active Sessions
-        sqlx::query!("DELETE FROM ActiveSessions WHERE id = ?", self.id)
+    pub async fn detect_and_remove_dangling_sessions(
+        pool: &Pool<MySql>,
+    ) -> Result<(), HelibotError> {
+        sqlx::query!("DELETE FROM ActiveSessions")
             .execute(pool)
             .await?;
-
         Ok(())
     }
 }

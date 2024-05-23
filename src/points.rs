@@ -1,15 +1,16 @@
-use sqlx::{MySql, Pool};
+use std::collections::HashSet;
 
-use crate::errors::HelibotError;
+use serenity::all::GuildId;
+use sqlx::{types::time::OffsetDateTime, MySql, Pool};
 
-#[derive(Debug)]
-struct Point {
-    id: u32,
-    points: u32,
-    #[allow(dead_code)]
-    guild_id: u64,
-    #[allow(dead_code)]
-    user_id: u64,
+use crate::{errors::HelibotError, sessions::ActiveSession};
+
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub struct Point {
+    pub id: u32,
+    pub points: u32,
+    pub guild_id: u64,
+    pub user_id: u64,
 }
 
 pub async fn add_points(
@@ -58,4 +59,32 @@ pub async fn add_points(
     .await?;
 
     Ok(new_points)
+}
+
+pub async fn get_points_for_guild(
+    pool: &Pool<MySql>,
+    guild_id: &GuildId,
+) -> Result<HashSet<Point>, HelibotError> {
+    let mut points = sqlx::query_as!(
+        Point,
+        "SELECT * from Points WHERE guild_id = ?",
+        guild_id.get()
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let active_sessions =
+        ActiveSession::get_all_active_sessions_for_guild(pool, guild_id.get()).await?;
+
+    active_sessions.iter().for_each(|active_session| {
+        if let Some(point) = points
+            .iter_mut()
+            .find(|point| point.user_id == active_session.user_id)
+        {
+            let to_add = (OffsetDateTime::now_utc() - active_sessions[0].begin).whole_seconds();
+            point.points += to_add as u32
+        }
+    });
+
+    Ok(HashSet::from_iter(points.into_iter()))
 }

@@ -1,17 +1,22 @@
 use dotenv::dotenv;
 use errors::{EnvVarError, HelibotError};
 use serenity::{all::GatewayIntents, Client};
+use sessions::ActiveSession;
 use sqlx::{mysql::MySqlPoolOptions, MySql, Pool};
-use std::env;
+use std::{env, sync::Arc};
+use tokio::sync::Mutex;
 
 mod errors;
 mod event_handler;
+mod message;
 mod points;
 mod sessions;
+mod usernames;
 
 struct Env {
     mysql_url: String,
     discord_token: String,
+    point_channel_name: String,
 }
 
 #[tokio::main]
@@ -19,11 +24,17 @@ async fn main() -> Result<(), errors::HelibotError> {
     let env = retrieve_env().map_err(errors::HelibotError::EnvVarError)?;
     let pool = setup_db_connection(&env).await?;
 
+    ActiveSession::detect_and_remove_dangling_sessions(&pool).await?;
+
     let mut client = Client::builder(
         &env.discord_token,
         GatewayIntents::GUILD_VOICE_STATES | GatewayIntents::GUILDS,
     )
-    .event_handler(event_handler::Handler { pool })
+    .event_handler(event_handler::Handler {
+        pool: Arc::new(Mutex::new(pool)),
+        env,
+        message_builder: Default::default(),
+    })
     .await
     .expect("Err creating client");
 
@@ -62,8 +73,12 @@ fn retrieve_env() -> Result<Env, errors::EnvVarError> {
     );
 
     let discord_token = get_var("DISCORD_TOKEN")?;
+
+    let point_channel_name = get_var("POINTS_CHANNEL_NAME")?;
+
     Ok(Env {
         mysql_url,
         discord_token,
+        point_channel_name,
     })
 }
