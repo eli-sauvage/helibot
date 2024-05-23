@@ -20,16 +20,10 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
-    image: helibot:latest
+    image: ${DOCKER_IMAGE_URL_BASE}helibot:latest
     depends_on:
       db:
         condition: service_healthy
-    develop:
-      watch:
-        - action: rebuild
-          path: ./Cargo.toml
-        - action: rebuild
-          path: ./src
     networks:
       - helibot
 
