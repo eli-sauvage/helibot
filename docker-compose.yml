@@ -15,15 +15,11 @@ services:
     networks:
       - helibot
   helibot:
-    # build:
-    #   context: .
-    #   dockerfile: ./Dockerfile
-    #   cache_from:
-    #     - type=gha
-    #   cache_to:
-    #     - type=gha
+    build:
+      context: .
+      dockerfile: ./Dockerfile
     volumes:
-      - .env:{PWD}/.env
+      - .env:/.env
     image: ${DOCKER_IMAGE_URL_BASE}helibot:latest
     environment:
       - MARIADB_HOST=db

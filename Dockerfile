@@ -1,4 +1,4 @@
-FROM rust
+FROM rust:1-bookworm as builder
 
 ENV SQLX_OFFLINE true
 
@@ -15,4 +15,9 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/helibot/target \
     cargo install --path .
 
+FROM debian:bookworm-slim
+
+COPY --from=builder /usr/local/cargo/bin/helibot /usr/local/bin/helibot
+
 CMD ["helibot"]
+

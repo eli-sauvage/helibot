@@ -1,4 +1,5 @@
 .env 
+compose.override.yml
 
 # Added by cargo
 
