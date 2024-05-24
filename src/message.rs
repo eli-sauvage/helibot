@@ -183,7 +183,6 @@ async fn try_edit_old_points_message(
 ) -> Result<(), HelibotError> {
     let (old_message, old_points) = old_message_points;
     if points == old_points {
-        println!("points same, skipping");
         return Ok(());
     }
     old_message

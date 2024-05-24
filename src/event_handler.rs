@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use serenity::all::{
-    ChannelId, ChannelType, Context, CreateInteractionResponseMessage, EventHandler, Interaction, Member, Ready, VoiceState
+    ChannelId, ChannelType, Context, CreateInteractionResponseMessage, EventHandler, Interaction, Ready, VoiceState
 };
 use serenity::async_trait;
 use sqlx::{self, MySql, Pool};
@@ -70,10 +70,6 @@ impl EventHandler for Handler {
         });
     }
 
-    async fn guild_member_addition(&self, _ctx: Context, member: Member){
-        self.username_manager.write().await.add_user(member).await;
-    }
-
     async fn voice_state_update(
         &self,
         ctx: Context,
@@ -84,9 +80,15 @@ impl EventHandler for Handler {
         let guild_id = match new_state.guild_id {
             Some(guild_id) => guild_id,
             _ => return,
+        };
+        let user_id = new_state.user_id;
+
+        if self.username_manager.read().await.get_username_from_cache(guild_id, user_id).is_none(){
+            if let Some(member) = &new_state.member{
+                println!("adding user to db");
+                self.username_manager.write().await.add_user(member.clone()).await;
+            }
         }
-        .get();
-        let user_id = new_state.user_id.get();
 
         let voice_state_action =
             VoiceStateAction::compute_action(&ctx, &new_state, old_state.as_ref()).await;
@@ -94,7 +96,7 @@ impl EventHandler for Handler {
         if voice_state_action == VoiceStateAction::Unchanged {
             return;
         }
-        let session = match ActiveSession::get(&pool, user_id, guild_id).await {
+        let session = match ActiveSession::get(&pool, user_id.get(), guild_id.get()).await {
             Ok(session) => session,
             Err(e) => {
                 eprintln!("{:?}", e);
@@ -105,7 +107,7 @@ impl EventHandler for Handler {
         match voice_state_action {
             VoiceStateAction::Joined => {
                 if session.is_none() {
-                    if let Err(e) = ActiveSession::create(&pool, user_id, guild_id).await {
+                    if let Err(e) = ActiveSession::create(&pool, user_id.get(), guild_id.get()).await {
                         eprintln!("{:?}", e);
                     }
                 }

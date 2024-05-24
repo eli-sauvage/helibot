@@ -77,12 +77,17 @@ pub async fn get_points_for_guild(
         ActiveSession::get_all_active_sessions_for_guild(pool, guild_id.get()).await?;
 
     active_sessions.iter().for_each(|active_session| {
-        if let Some(point) = points
+        let to_add = (OffsetDateTime::now_utc() - active_sessions[0].begin).whole_seconds() as u32;
+        match points
             .iter_mut()
             .find(|point| point.user_id == active_session.user_id)
         {
-            let to_add = (OffsetDateTime::now_utc() - active_sessions[0].begin).whole_seconds();
-            point.points += to_add as u32
+            Some(point) => {
+                point.points += to_add;
+            }
+            None => {
+                points.push(Point { id: 0, points: to_add, guild_id: active_session.guild_id, user_id: active_session.user_id })
+            }
         }
     });
 
