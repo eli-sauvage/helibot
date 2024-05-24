@@ -1,13 +1,14 @@
 use crate::{
-    bot::{message::MessageBuilder, points, sessions::ActiveSession, usernames::UsernameManager},
+    bot::{
+        message::MessageBuilder, points, sessions::ActiveSession, usernames::UsernameManager, voice,
+    },
     db_connection::DbConnection,
     Env,
 };
 
 use serenity::{
     all::{
-        ChannelId, ChannelType, Context, CreateInteractionResponseMessage, EventHandler,
-        Interaction, Ready, VoiceState,
+        Context, CreateInteractionResponseMessage, EventHandler, Interaction, Ready, VoiceState,
     },
     async_trait,
 };
@@ -23,7 +24,7 @@ impl EventHandler for Handler {
         let mut client_data = ctx.data.write().await;
 
         let pool = client_data.get::<DbConnection>().unwrap();
-        let username_manager = match UsernameManager::create(&pool, &ctx).await {
+        let username_manager = match UsernameManager::create(pool, &ctx).await {
             Ok(uname_manager) => uname_manager,
             Err(e) => {
                 eprintln!("could not create username manager: {e:?}");
@@ -53,8 +54,8 @@ impl EventHandler for Handler {
 
         client_data.insert::<UsernameManager>(username_manager);
         client_data.insert::<MessageBuilder>(message_builder);
+        drop(client_data);
 
-        let thread_ctx = ctx.clone();
         let thread_client_data = ctx.data.clone();
         tokio::spawn(async move {
             let mut interval = interval(Duration::from_secs(10));
@@ -64,7 +65,7 @@ impl EventHandler for Handler {
                     _ = interval.tick() => {
                         client_data.get_mut::<MessageBuilder>().unwrap()
                         .print_points_in_all_guilds(
-                            &thread_ctx,
+                            &ctx,
                             ready.guilds.iter().map(|guild| &guild.id).collect(),
                         )
                         .await;
@@ -80,13 +81,10 @@ impl EventHandler for Handler {
         old_state: Option<VoiceState>,
         new_state: VoiceState,
     ) {
-        let client_data = ctx.data.read().await;
-        let pool = client_data.get::<DbConnection>().unwrap();
         let guild_id = match new_state.guild_id {
             Some(guild_id) => guild_id,
             _ => return,
         };
-        let user_id = new_state.user_id;
 
         if ctx
             .data
@@ -94,7 +92,7 @@ impl EventHandler for Handler {
             .await
             .get::<UsernameManager>()
             .unwrap()
-            .get_username_from_cache(guild_id, user_id)
+            .get_username_from_cache(guild_id, new_state.user_id)
             .is_none()
         {
             if let Some(member) = &new_state.member {
@@ -109,39 +107,7 @@ impl EventHandler for Handler {
             }
         }
 
-        let voice_state_action =
-            VoiceStateAction::compute_action(&ctx, &new_state, old_state.as_ref()).await;
-
-        if voice_state_action == VoiceStateAction::Unchanged {
-            return;
-        }
-        let session = match ActiveSession::get(&pool, user_id.get(), guild_id.get()).await {
-            Ok(session) => session,
-            Err(e) => {
-                eprintln!("{:?}", e);
-                return;
-            }
-        };
-
-        match voice_state_action {
-            VoiceStateAction::Joined => {
-                if session.is_none() {
-                    if let Err(e) =
-                        ActiveSession::create(&pool, user_id.get(), guild_id.get()).await
-                    {
-                        eprintln!("{:?}", e);
-                    }
-                }
-            }
-            VoiceStateAction::Quit => {
-                if let Some(session) = session {
-                    if let Err(e) = ActiveSession::terminate(session, &pool).await {
-                        eprintln!("{:?}", e);
-                    }
-                }
-            }
-            VoiceStateAction::Unchanged => {}
-        }
+        voice::compute_voice_state_change(&ctx, new_state, old_state, &guild_id).await;
     }
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
@@ -164,7 +130,6 @@ impl EventHandler for Handler {
                         .unwrap();
                 }
                 "print_all" => {
-                    //component.user.direct_message(cache_http, builder)
                     if let Some(guild_id) = component.guild_id {
                         if let Ok(table) = points::construct_points_md_table(&ctx, &guild_id).await
                         {
@@ -189,62 +154,4 @@ impl EventHandler for Handler {
             }
         }
     }
-}
-
-#[derive(Debug, PartialEq)]
-enum VoiceStateAction {
-    Joined,
-    Quit,
-    Unchanged,
-}
-impl VoiceStateAction {
-    async fn compute_action(
-        ctx: &Context,
-        new_voice_state: &VoiceState,
-        old_voice_state_opt: Option<&VoiceState>,
-    ) -> VoiceStateAction {
-        let deaf = new_voice_state.deaf || new_voice_state.self_deaf;
-        let old_deaf = old_voice_state_opt
-            .is_some_and(|old_voice_state| old_voice_state.deaf || old_voice_state.self_deaf);
-        match (old_deaf, deaf) {
-            (true, false) => return VoiceStateAction::Joined,
-            (false, true) => return VoiceStateAction::Quit,
-            _ => {}
-        };
-
-        let mute = new_voice_state.mute || new_voice_state.self_mute;
-        let old_mute = old_voice_state_opt
-            .is_some_and(|old_voice_state| old_voice_state.mute || old_voice_state.self_mute);
-        match (old_mute, mute) {
-            (true, false) => return VoiceStateAction::Joined,
-            (false, true) => return VoiceStateAction::Quit,
-            _ => {}
-        };
-
-        match (
-            is_voice_channel(
-                ctx,
-                old_voice_state_opt.and_then(|old_state| old_state.channel_id),
-            )
-            .await,
-            is_voice_channel(ctx, new_voice_state.channel_id).await,
-        ) {
-            (false, true) => return VoiceStateAction::Joined,
-            (true, false) => return VoiceStateAction::Quit,
-            _ => {}
-        };
-
-        VoiceStateAction::Unchanged //default
-    }
-}
-
-async fn is_voice_channel(ctx: &Context, channel_id_opt: Option<ChannelId>) -> bool {
-    if let Some(channel_id) = channel_id_opt {
-        if let Ok(channel) = channel_id.to_channel(ctx).await {
-            if let Some(guild_channel) = channel.guild() {
-                return guild_channel.kind == ChannelType::Voice;
-            }
-        }
-    }
-    false
 }

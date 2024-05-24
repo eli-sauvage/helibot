@@ -5,7 +5,6 @@ use bot::{event_handler, sessions};
 use db_connection::DbConnection;
 use errors::{EnvVarError, HelibotError};
 
-use dotenvy;
 use serenity::{all::GatewayIntents, prelude::TypeMapKey, Client};
 use std::env;
 
@@ -24,10 +23,10 @@ async fn main() -> Result<(), errors::HelibotError> {
     .await
     .map_err(HelibotError::SerenityError)?;
 
-    let mut data = client.data.write().await;
-    data.insert::<DbConnection>(pool);
-    data.insert::<Env>(env);
-    drop(data);
+    let mut client_data = client.data.write().await;
+    client_data.insert::<DbConnection>(pool);
+    client_data.insert::<Env>(env);
+    drop(client_data);
 
     if let Err(err) = client.start().await {
         println!("Client error: {err:?}");

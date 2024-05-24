@@ -55,11 +55,6 @@ impl UsernameManager {
         })
     }
 
-    //pub async fn refresh(&mut self, pool: &Pool<MySql>, ctx: &Context) -> Result<(), HelibotError> {
-    //    self.usernames_cached = UsernameManager::create(pool, ctx).await?.usernames_cached;
-    //    Ok(())
-    //}
-
     pub async fn add_user(&mut self, member: Member) {
         self.usernames_cached.insert(
             (member.guild_id, member.user.id),

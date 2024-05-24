@@ -97,7 +97,7 @@ impl MessageBuilder {
 
             let edit_result = match self.messages.get_mut(guild_id) {
                 Some((ref mut old_message_ref, old_points)) => Some(
-                    try_edit_old_points_message(ctx, &embed, &points, &old_points, old_message_ref)
+                    try_edit_old_points_message(ctx, &embed, &points, old_points, old_message_ref)
                         .await,
                 ),
                 None => None,
