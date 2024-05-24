@@ -6,7 +6,6 @@ WORKDIR /app/helibot/
 
 COPY Cargo.toml Cargo.toml
 COPY src/ src/
-COPY .env .env
 
 #/!\ please make sure to run `cargo sqlx prepare` before
 COPY .sqlx .sqlx
