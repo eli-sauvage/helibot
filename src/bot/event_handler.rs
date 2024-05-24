@@ -27,8 +27,7 @@ impl EventHandler for Handler {
         let username_manager = match UsernameManager::create(pool, &ctx).await {
             Ok(uname_manager) => uname_manager,
             Err(e) => {
-                eprintln!("could not create username manager: {e:?}");
-                return;
+                panic!("could not create username manager: {e:?}");
             }
         };
 
@@ -47,8 +46,7 @@ impl EventHandler for Handler {
         {
             Ok(builder) => builder,
             Err(e) => {
-                eprintln!("could not create new message builder : {e}");
-                return;
+                panic!("could not create new message builder : {e}");
             }
         };
 
