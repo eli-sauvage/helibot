@@ -1,6 +1,9 @@
 use crate::{bot::points::Point, errors::HelibotError};
 
-use serenity::{all::{Context, GuildId, Member, UserId}, prelude::TypeMapKey};
+use serenity::{
+    all::{Context, GuildId, Member, UserId},
+    prelude::TypeMapKey,
+};
 use sqlx::{MySql, Pool};
 use std::collections::HashMap;
 

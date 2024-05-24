@@ -1,5 +1,7 @@
 use crate::{
-    bot::{sessions::ActiveSession, usernames::UsernameManager}, db_connection::DbConnection, errors::HelibotError
+    bot::{sessions::ActiveSession, usernames::UsernameManager},
+    db_connection::DbConnection,
+    errors::HelibotError,
 };
 
 use serenity::all::{Context, GuildId, UserId};

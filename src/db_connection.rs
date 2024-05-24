@@ -9,7 +9,6 @@ impl TypeMapKey for DbConnection {
     type Value = Pool<MySql>;
 }
 
-
 pub async fn setup_db_and_migrate(env: &Env) -> Result<Pool<MySql>, HelibotError> {
     let pool = MySqlPoolOptions::new()
         .max_connections(5)
