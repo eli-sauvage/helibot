@@ -4,13 +4,13 @@ use crate::{bot::sessions::ActiveSession, db_connection::DbConnection};
 
 pub async fn compute_voice_state_change(
     ctx: &Context,
-    new_state: VoiceState,
-    old_state: Option<VoiceState>,
+    new_state: &VoiceState,
+    old_state: &Option<VoiceState>,
     guild_id: &GuildId,
 ) {
     let client_data = ctx.data.read().await;
     let pool = client_data.get::<DbConnection>().unwrap();
-    let voice_state_action = compute_action(ctx, &new_state, old_state.as_ref()).await;
+    let voice_state_action = compute_action(ctx, new_state, old_state.as_ref()).await;
 
     if voice_state_action == VoiceStateAction::Unchanged {
         return;

@@ -81,33 +81,16 @@ impl EventHandler for Handler {
         old_state: Option<VoiceState>,
         new_state: VoiceState,
     ) {
-        let guild_id = match new_state.guild_id {
-            Some(guild_id) => guild_id,
-            _ => return,
+        if let Some(member) = &new_state.member {
+            ctx.data
+                .write()
+                .await
+                .get_mut::<UsernameManager>()
+                .unwrap()
+                .add_user_if_not_in_cache(member);
+
+            voice::compute_voice_state_change(&ctx, &new_state, &old_state, &member.guild_id).await;
         };
-
-        if ctx
-            .data
-            .read()
-            .await
-            .get::<UsernameManager>()
-            .unwrap()
-            .get_username_from_cache(guild_id, new_state.user_id)
-            .is_none()
-        {
-            if let Some(member) = &new_state.member {
-                println!("adding user to db");
-                ctx.data
-                    .write()
-                    .await
-                    .get_mut::<UsernameManager>()
-                    .unwrap()
-                    .add_user(member.clone())
-                    .await;
-            }
-        }
-
-        voice::compute_voice_state_change(&ctx, new_state, old_state, &guild_id).await;
     }
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {

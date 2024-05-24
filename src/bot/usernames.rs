@@ -55,11 +55,20 @@ impl UsernameManager {
         })
     }
 
-    pub async fn add_user(&mut self, member: Member) {
+    pub fn add_user(&mut self, member: Member) {
         self.usernames_cached.insert(
             (member.guild_id, member.user.id),
             member.nick.unwrap_or(member.user.name),
         );
+    }
+
+    pub fn add_user_if_not_in_cache(&mut self, member: &Member) {
+        if self
+            .get_username_from_cache(member.guild_id, member.user.id)
+            .is_none()
+        {
+            self.add_user(member.clone());
+        }
     }
 
     pub fn get_username_from_cache(&self, guild_id: GuildId, user_id: UserId) -> Option<&str> {
