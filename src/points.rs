@@ -86,6 +86,7 @@ pub async fn get_points_for_guild(
                 point.points += to_add;
             }
             None => {
+                println!("manually adding points instance for user {} bc Points row does not exist yet value = {}", active_session.user_id, to_add);
                 points.push(Point { id: 0, points: to_add, guild_id: active_session.guild_id, user_id: active_session.user_id })
             }
         }

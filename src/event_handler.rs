@@ -1,7 +1,8 @@
 use std::time::Duration;
 
 use serenity::all::{
-    ChannelId, ChannelType, Context, CreateInteractionResponseMessage, EventHandler, Interaction, Ready, VoiceState
+    ChannelId, ChannelType, Context, CreateInteractionResponseMessage, EventHandler, Interaction,
+    Ready, VoiceState,
 };
 use serenity::async_trait;
 use sqlx::{self, MySql, Pool};
@@ -36,6 +37,13 @@ impl EventHandler for Handler {
                 return;
             }
         };
+
+        let current_sessions_res =
+            ActiveSession::add_current_sessions_to_db_on_startup(&pool, &ctx, &ready).await;
+        if let Err(err) = current_sessions_res {
+            println!("could not instanciate active sessions on startup: {err:?}");
+        }
+
         *self.message_builder.write().await =
             match MessageBuilder::new(&ctx, &ready, &__self.env.point_channel_name).await {
                 Ok(builder) => builder,
@@ -49,7 +57,7 @@ impl EventHandler for Handler {
         let thread_msg_builder = self.message_builder.clone();
         let thread_username_manager = self.username_manager.clone();
         tokio::spawn(async move {
-            let mut interval = interval(Duration::from_secs(60 * 3));
+            let mut interval = interval(Duration::from_secs(10));
 
             loop {
                 tokio::select! {
@@ -83,10 +91,20 @@ impl EventHandler for Handler {
         };
         let user_id = new_state.user_id;
 
-        if self.username_manager.read().await.get_username_from_cache(guild_id, user_id).is_none(){
-            if let Some(member) = &new_state.member{
+        if self
+            .username_manager
+            .read()
+            .await
+            .get_username_from_cache(guild_id, user_id)
+            .is_none()
+        {
+            if let Some(member) = &new_state.member {
                 println!("adding user to db");
-                self.username_manager.write().await.add_user(member.clone()).await;
+                self.username_manager
+                    .write()
+                    .await
+                    .add_user(member.clone())
+                    .await;
             }
         }
 
@@ -107,7 +125,9 @@ impl EventHandler for Handler {
         match voice_state_action {
             VoiceStateAction::Joined => {
                 if session.is_none() {
-                    if let Err(e) = ActiveSession::create(&pool, user_id.get(), guild_id.get()).await {
+                    if let Err(e) =
+                        ActiveSession::create(&pool, user_id.get(), guild_id.get()).await
+                    {
                         eprintln!("{:?}", e);
                     }
                 }

@@ -1,3 +1,5 @@
+use serenity::all::{ChannelType, Context, Member, Ready};
+use serenity::futures::future::join_all;
 use sqlx::{types::time::OffsetDateTime, MySql, Pool};
 
 use crate::errors::HelibotError;
@@ -95,6 +97,40 @@ impl ActiveSession {
         sqlx::query!("DELETE FROM ActiveSessions")
             .execute(pool)
             .await?;
+        Ok(())
+    }
+
+    pub async fn add_current_sessions_to_db_on_startup(
+        pool: &Pool<MySql>,
+        ctx: &Context,
+        ready: &Ready,
+    ) -> Result<(), HelibotError> {
+        for guild in &ready.guilds {
+            let mut connected_members: Vec<Member> = vec![];
+            if let Ok(channels) = guild.id.channels(ctx).await {
+                channels
+                    .values()
+                    .flat_map(|guild_channel| match guild_channel.kind {
+                        ChannelType::Voice => guild_channel.members(ctx).unwrap_or_default(),
+                        _ => {
+                            vec![]
+                        }
+                    })
+                    .for_each(|conneted_member| connected_members.push(conneted_member));
+            }
+            let queries = connected_members.iter().map(|member|async move {
+                println!("connected user {}", member.user.name);
+                let res = sqlx::query!(
+                    "INSERT INTO ActiveSessions (user_id, guild_id, begin) VALUES (?, ?, CURRENT_TIMESTAMP)",
+                    member.user.id.get(),
+                    guild.id.get()
+                ).execute(pool).await;
+                if let Err(err) = res{
+                    eprintln!("could not add active session for user {} on startup : {err:?}", member.user.id.get())
+                }
+            });
+            join_all(queries).await;
+        }
         Ok(())
     }
 }
