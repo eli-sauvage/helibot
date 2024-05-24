@@ -21,8 +21,13 @@ struct Env {
 
 #[tokio::main]
 async fn main() -> Result<(), errors::HelibotError> {
-    let env = retrieve_env().map_err(errors::HelibotError::EnvVarError)?;
+    let env = retrieve_env().map_err(HelibotError::EnvVarError)?;
     let pool = setup_db_connection(&env).await?;
+
+    sqlx::migrate!("./migrations")
+        .run(&pool)
+        .await
+        .map_err(HelibotError::Migrate)?;
 
     ActiveSession::detect_and_remove_dangling_sessions(&pool).await?;
 

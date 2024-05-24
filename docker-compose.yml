@@ -21,6 +21,8 @@ services:
       context: .
       dockerfile: ./Dockerfile
     image: ${DOCKER_IMAGE_URL_BASE}helibot:latest
+    environment:
+      - MARIADB_HOST=db
     depends_on:
       db:
         condition: service_healthy

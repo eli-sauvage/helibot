@@ -6,6 +6,8 @@ use thiserror::Error;
 pub enum HelibotError {
     #[error("Sqlx error")]
     Sqlx(#[from] sqlx::error::Error),
+    #[error("Migration error")]
+    Migrate(#[from] sqlx::migrate::MigrateError),
     #[error(transparent)]
     EnvVarError(EnvVarError),
     #[error("points channel not found in guild {0}")]
