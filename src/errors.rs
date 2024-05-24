@@ -23,5 +23,5 @@ pub enum EnvVarError {
     #[error("the variable was not found")]
     VarNotFound,
     #[error("dotenv module failed to load env")]
-    DotEnvModuleError,
+    DotEnvModuleError(#[from] dotenvy::Error),
 }

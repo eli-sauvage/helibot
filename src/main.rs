@@ -62,7 +62,7 @@ async fn setup_db_connection(env: &Env) -> Result<Pool<MySql>, HelibotError> {
 }
 
 fn retrieve_env() -> Result<Env, errors::EnvVarError> {
-    dotenv().map_err(|_| EnvVarError::DotEnvModuleError)?;
+    dotenv().map_err(EnvVarError::DotEnvModuleError)?;
     fn get_var(var: &str) -> Result<String, errors::EnvVarError> {
         env::var_os(var)
             .ok_or(EnvVarError::VarNotFound)?
