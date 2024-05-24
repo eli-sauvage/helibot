@@ -1,14 +1,19 @@
+use crate::{
+    errors::HelibotError,
+    bot::{
+        points::{self, Point},
+        usernames::UsernameManager,
+    },
+};
+
 use serenity::{
     all::{
         ChannelId, Context, CreateButton, CreateEmbed, CreateEmbedFooter, CreateMessage,
         EditMessage, GetMessages, GuildId, Message, ReactionType, Ready, Timestamp,
     },
-    futures::future::join_all,
+    futures::future,
 };
 use sqlx::{MySql, Pool};
-
-use crate::{errors::HelibotError, points};
-use crate::{points::Point, usernames::UsernameManager};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Default)]
@@ -37,7 +42,7 @@ impl MessageBuilder {
                         Err(e) => Err(HelibotError::SerenityError(e)),
                     }
                 });
-        let channels = join_all(guild_channels_future_iter).await;
+        let channels = future::join_all(guild_channels_future_iter).await;
 
         //print error (channel not found)
         channels
@@ -86,8 +91,7 @@ impl MessageBuilder {
                 }
             };
 
-            let embed =
-                build_point_message(points::parse_to_tuple(username_manager, &points));
+            let embed = build_point_message(points::parse_to_tuple(username_manager, &points));
 
             let edit_result = match self.messages.get_mut(guild_id) {
                 Some(old_message) => {
@@ -144,9 +148,11 @@ async fn send_new_msg(
 }
 
 fn build_point_message(mut points: Vec<(String, String)>) -> CreateEmbed {
-    points = points.iter().enumerate().map(|(index, val)|{
-        (format!("#{} {}", index + 1, val.0), val.1.to_owned())
-    }).collect();
+    points = points
+        .iter()
+        .enumerate()
+        .map(|(index, val)| (format!("#{} {}", index + 1, val.0), val.1.to_owned()))
+        .collect();
     points.shrink_to(15);
 
     if points.len() > 2 {

@@ -1,9 +1,11 @@
-use std::collections::HashSet;
+use crate::{
+    bot::{sessions::ActiveSession, usernames::UsernameManager},
+    errors::HelibotError,
+};
 
 use serenity::all::{GuildId, UserId};
 use sqlx::{types::time::OffsetDateTime, MySql, Pool};
-
-use crate::{errors::HelibotError, sessions::ActiveSession, usernames::UsernameManager};
+use std::collections::HashSet;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Point {

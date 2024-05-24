@@ -1,9 +1,8 @@
-use std::collections::HashMap;
+use crate::{bot::points::Point, errors::HelibotError};
 
 use serenity::all::{Context, GuildId, Member, UserId};
 use sqlx::{MySql, Pool};
-
-use crate::{errors::HelibotError, points::Point};
+use std::collections::HashMap;
 
 type UniqueUser = (GuildId, UserId);
 
@@ -55,7 +54,10 @@ impl UsernameManager {
     //}
 
     pub async fn add_user(&mut self, member: Member) {
-        self.usernames_cached.insert((member.guild_id, member.user.id), member.nick.unwrap_or(member.user.name));
+        self.usernames_cached.insert(
+            (member.guild_id, member.user.id),
+            member.nick.unwrap_or(member.user.name),
+        );
     }
 
     pub fn get_username_from_cache(&self, guild_id: GuildId, user_id: UserId) -> Option<&str> {

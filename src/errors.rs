@@ -1,5 +1,3 @@
-use std::ffi::OsString;
-
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -19,7 +17,7 @@ pub enum HelibotError {
 #[derive(Error, Debug)]
 pub enum EnvVarError {
     #[error("could not convert os string to string")]
-    OsString(OsString),
+    OsString(std::ffi::OsString),
     #[error("the variable was not found")]
     VarNotFound,
     #[error("dotenv module failed to load env")]

@@ -1,9 +1,10 @@
-use serenity::all::{ChannelType, Context, Member, Ready};
-use serenity::futures::future::join_all;
-use sqlx::{types::time::OffsetDateTime, MySql, Pool};
+use crate::{bot::points, errors::HelibotError};
 
-use crate::errors::HelibotError;
-use crate::points;
+use serenity::{
+    all::{ChannelType, Context, Member, Ready},
+    futures::future,
+};
+use sqlx::{types::time::OffsetDateTime, MySql, Pool};
 
 #[derive(Debug)]
 pub struct ActiveSession {
@@ -129,7 +130,7 @@ impl ActiveSession {
                     eprintln!("could not add active session for user {} on startup : {err:?}", member.user.id.get())
                 }
             });
-            join_all(queries).await;
+            future::join_all(queries).await;
         }
         Ok(())
     }

@@ -1,17 +1,15 @@
-use dotenvy::dotenv;
-use errors::{EnvVarError, HelibotError};
-use serenity::{all::GatewayIntents, Client};
-use sessions::ActiveSession;
-use sqlx::{mysql::MySqlPoolOptions, MySql, Pool};
-use std::{env, sync::Arc};
-use tokio::sync::RwLock;
-
+mod bot;
 mod errors;
-mod event_handler;
-mod message;
-mod points;
-mod sessions;
-mod usernames;
+use bot::{event_handler, sessions};
+use errors::{EnvVarError, HelibotError};
+
+
+use dotenvy::dotenv;
+use serenity::{all::GatewayIntents, Client};
+use sqlx::{mysql::MySqlPoolOptions, MySql, Pool};
+use tokio::sync::RwLock;
+use std::{env, sync::Arc};
+
 
 struct Env {
     mysql_url: String,
@@ -29,7 +27,7 @@ async fn main() -> Result<(), errors::HelibotError> {
         .await
         .map_err(HelibotError::Migrate)?;
 
-    ActiveSession::detect_and_remove_dangling_sessions(&pool).await?;
+    sessions::ActiveSession::detect_and_remove_dangling_sessions(&pool).await?;
 
     let mut client = Client::builder(
         &env.discord_token,

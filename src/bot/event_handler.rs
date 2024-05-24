@@ -1,21 +1,18 @@
-use std::time::Duration;
-
-use serenity::all::{
-    ChannelId, ChannelType, Context, CreateInteractionResponseMessage, EventHandler, Interaction,
-    Ready, VoiceState,
+use crate::{
+    bot::{message::MessageBuilder, points, sessions::ActiveSession, usernames::UsernameManager},
+    Env,
 };
-use serenity::async_trait;
+
+use serenity::{
+    all::{
+        ChannelId, ChannelType, Context, CreateInteractionResponseMessage, EventHandler,
+        Interaction, Ready, VoiceState,
+    },
+    async_trait,
+};
 use sqlx::{self, MySql, Pool};
-use tokio::time::interval;
-
-use std::sync::Arc;
-use tokio::sync::RwLock;
-
-use crate::message::MessageBuilder;
-use crate::points;
-use crate::sessions::ActiveSession;
-use crate::usernames::UsernameManager;
-use crate::Env;
+use std::{sync::Arc, time::Duration};
+use tokio::{sync::RwLock, time::interval};
 
 pub struct Handler {
     pub pool: Arc<RwLock<Pool<MySql>>>,
