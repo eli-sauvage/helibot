@@ -18,8 +18,12 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
+      cache_from:
+        - type=gha
+      cache_to:
+        - type=gha
     volumes:
-      - .env:.env
+      - .env:{PWD}/.env
     image: ${DOCKER_IMAGE_URL_BASE}helibot:latest
     environment:
       - MARIADB_HOST=db
