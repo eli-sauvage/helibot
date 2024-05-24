@@ -1,5 +1,6 @@
 use crate::{
     bot::{message::MessageBuilder, points, sessions::ActiveSession, usernames::UsernameManager},
+    db_connection::DbConnection,
     Env,
 };
 
@@ -10,24 +11,19 @@ use serenity::{
     },
     async_trait,
 };
-use sqlx::{self, MySql, Pool};
-use std::{sync::Arc, time::Duration};
-use tokio::{sync::RwLock, time::interval};
+use std::time::Duration;
+use tokio::time::interval;
 
-pub struct Handler {
-    pub pool: Arc<RwLock<Pool<MySql>>>,
-    pub message_builder: Arc<RwLock<MessageBuilder>>,
-    pub env: Env,
-    pub username_manager: Arc<RwLock<UsernameManager>>,
-}
+pub struct Handler;
 
 #[async_trait]
 impl EventHandler for Handler {
     async fn ready(&self, ctx: Context, ready: Ready) {
         println!("helibot is online");
+        let mut client_data = ctx.data.write().await;
 
-        let pool = self.pool.read().await;
-        *self.username_manager.write().await = match UsernameManager::create(&pool, &ctx).await {
+        let pool = client_data.get::<DbConnection>().unwrap();
+        let username_manager = match UsernameManager::create(&pool, &ctx).await {
             Ok(uname_manager) => uname_manager,
             Err(e) => {
                 eprintln!("could not create username manager: {e:?}");
@@ -36,37 +32,40 @@ impl EventHandler for Handler {
         };
 
         let current_sessions_res =
-            ActiveSession::add_current_sessions_to_db_on_startup(&pool, &ctx, &ready).await;
+            ActiveSession::add_current_sessions_to_db_on_startup(pool, &ctx, &ready).await;
         if let Err(err) = current_sessions_res {
             println!("could not instanciate active sessions on startup: {err:?}");
         }
 
-        *self.message_builder.write().await =
-            match MessageBuilder::new(&ctx, &ready, &__self.env.point_channel_name).await {
-                Ok(builder) => builder,
-                Err(e) => {
-                    eprintln!("could not create new message builder : {e}");
-                    return;
-                }
-            };
+        let message_builder = match MessageBuilder::new(
+            &ctx,
+            &ready,
+            &client_data.get::<Env>().unwrap().point_channel_name,
+        )
+        .await
+        {
+            Ok(builder) => builder,
+            Err(e) => {
+                eprintln!("could not create new message builder : {e}");
+                return;
+            }
+        };
 
-        let thread_pool = self.pool.clone();
-        let thread_msg_builder = self.message_builder.clone();
-        let thread_username_manager = self.username_manager.clone();
+        client_data.insert::<UsernameManager>(username_manager);
+        client_data.insert::<MessageBuilder>(message_builder);
+
+        let thread_ctx = ctx.clone();
+        let thread_client_data = ctx.data.clone();
         tokio::spawn(async move {
             let mut interval = interval(Duration::from_secs(10));
-
+            let mut client_data = thread_client_data.write().await;
             loop {
                 tokio::select! {
                     _ = interval.tick() => {
-                        let pool = thread_pool.read().await;
-                        let username_manager = thread_username_manager.read().await;
-                        thread_msg_builder.write().await
+                        client_data.get_mut::<MessageBuilder>().unwrap()
                         .print_points_in_all_guilds(
-                            &ctx.clone(),
-                            &pool,
+                            &thread_ctx,
                             ready.guilds.iter().map(|guild| &guild.id).collect(),
-                            &username_manager
                         )
                         .await;
                     }
@@ -81,25 +80,30 @@ impl EventHandler for Handler {
         old_state: Option<VoiceState>,
         new_state: VoiceState,
     ) {
-        let pool = self.pool.read().await;
+        let client_data = ctx.data.read().await;
+        let pool = client_data.get::<DbConnection>().unwrap();
         let guild_id = match new_state.guild_id {
             Some(guild_id) => guild_id,
             _ => return,
         };
         let user_id = new_state.user_id;
 
-        if self
-            .username_manager
+        if ctx
+            .data
             .read()
             .await
+            .get::<UsernameManager>()
+            .unwrap()
             .get_username_from_cache(guild_id, user_id)
             .is_none()
         {
             if let Some(member) = &new_state.member {
                 println!("adding user to db");
-                self.username_manager
+                ctx.data
                     .write()
                     .await
+                    .get_mut::<UsernameManager>()
+                    .unwrap()
                     .add_user(member.clone())
                     .await;
             }
@@ -141,20 +145,15 @@ impl EventHandler for Handler {
     }
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
+        let mut client_data = ctx.data.write().await;
+
         if let Interaction::Component(component) = interaction {
             match component.data.custom_id.as_str() {
                 "refresh" => {
-                    let pool = self.pool.read().await;
-                    let username_manager = self.username_manager.read().await;
-                    self.message_builder
-                        .write()
-                        .await
-                        .print_points_in_all_guilds(
-                            &ctx.clone(),
-                            &pool,
-                            ctx.cache.guilds().iter().collect(),
-                            &username_manager,
-                        )
+                    client_data
+                        .get_mut::<MessageBuilder>()
+                        .unwrap()
+                        .print_points_in_all_guilds(&ctx, ctx.cache.guilds().iter().collect())
                         .await;
                     component
                         .create_response(
@@ -167,15 +166,11 @@ impl EventHandler for Handler {
                 "print_all" => {
                     //component.user.direct_message(cache_http, builder)
                     if let Some(guild_id) = component.guild_id {
-                        let pool = self.pool.read().await;
-                        let username_manager = self.username_manager.read().await;
-                        if let Ok(table) =
-                            points::construct_points_md_table(&pool, &guild_id, &username_manager)
-                                .await
+                        if let Ok(table) = points::construct_points_md_table(&ctx, &guild_id).await
                         {
                             component
                                 .create_response(
-                                    ctx,
+                                    &ctx,
                                     serenity::all::CreateInteractionResponse::Message(
                                         CreateInteractionResponseMessage::new()
                                             .content(format!("```md\n{}\n```", table))

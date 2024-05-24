@@ -1,6 +1,6 @@
 use crate::{bot::points::Point, errors::HelibotError};
 
-use serenity::all::{Context, GuildId, Member, UserId};
+use serenity::{all::{Context, GuildId, Member, UserId}, prelude::TypeMapKey};
 use sqlx::{MySql, Pool};
 use std::collections::HashMap;
 
@@ -10,6 +10,10 @@ type UniqueUser = (GuildId, UserId);
 pub struct UsernameManager {
     usernames_cached: HashMap<UniqueUser, String>,
 }
+impl TypeMapKey for UsernameManager {
+    type Value = UsernameManager;
+}
+
 impl UsernameManager {
     pub async fn create(
         pool: &Pool<MySql>,

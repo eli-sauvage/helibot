@@ -92,14 +92,6 @@ impl ActiveSession {
         Ok(session)
     }
 
-    pub async fn detect_and_remove_dangling_sessions(
-        pool: &Pool<MySql>,
-    ) -> Result<(), HelibotError> {
-        sqlx::query!("DELETE FROM ActiveSessions")
-            .execute(pool)
-            .await?;
-        Ok(())
-    }
 
     pub async fn add_current_sessions_to_db_on_startup(
         pool: &Pool<MySql>,
@@ -134,4 +126,13 @@ impl ActiveSession {
         }
         Ok(())
     }
+}
+
+pub async fn detect_and_remove_dangling_sessions(
+    pool: &Pool<MySql>,
+) -> Result<(), HelibotError> {
+    sqlx::query!("DELETE FROM ActiveSessions")
+        .execute(pool)
+        .await?;
+    Ok(())
 }

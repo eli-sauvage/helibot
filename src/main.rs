@@ -1,66 +1,54 @@
 mod bot;
+mod db_connection;
 mod errors;
 use bot::{event_handler, sessions};
+use db_connection::DbConnection;
 use errors::{EnvVarError, HelibotError};
 
+use dotenvy;
+use serenity::{all::GatewayIntents, prelude::TypeMapKey, Client};
+use std::env;
 
-use dotenvy::dotenv;
-use serenity::{all::GatewayIntents, Client};
-use sqlx::{mysql::MySqlPoolOptions, MySql, Pool};
-use tokio::sync::RwLock;
-use std::{env, sync::Arc};
+#[tokio::main]
+async fn main() -> Result<(), errors::HelibotError> {
+    let env = get_env().map_err(HelibotError::EnvVarError)?;
+    let pool = db_connection::setup_db_and_migrate(&env).await?;
 
+    sessions::detect_and_remove_dangling_sessions(&pool).await?;
+
+    let mut client = Client::builder(
+        &env.discord_token,
+        GatewayIntents::GUILD_VOICE_STATES | GatewayIntents::GUILDS,
+    )
+    .event_handler(event_handler::Handler)
+    .await
+    .map_err(HelibotError::SerenityError)?;
+
+    let mut data = client.data.write().await;
+    data.insert::<DbConnection>(pool);
+    data.insert::<Env>(env);
+    drop(data);
+
+    if let Err(err) = client.start().await {
+        println!("Client error: {err:?}");
+    }
+
+    //current thread blocked until client error
+    //TODO: use never type (!) when in stable rust
+    Ok(())
+}
 
 struct Env {
     mysql_url: String,
     discord_token: String,
     point_channel_name: String,
 }
-
-#[tokio::main]
-async fn main() -> Result<(), errors::HelibotError> {
-    let env = retrieve_env().map_err(HelibotError::EnvVarError)?;
-    let pool = setup_db_connection(&env).await?;
-
-    sqlx::migrate!("./migrations")
-        .run(&pool)
-        .await
-        .map_err(HelibotError::Migrate)?;
-
-    sessions::ActiveSession::detect_and_remove_dangling_sessions(&pool).await?;
-
-    let mut client = Client::builder(
-        &env.discord_token,
-        GatewayIntents::GUILD_VOICE_STATES | GatewayIntents::GUILDS,
-    )
-    .event_handler(event_handler::Handler {
-        pool: Arc::new(RwLock::new(pool)),
-        env,
-        username_manager: Default::default(),
-        message_builder: Default::default(),
-    })
-    .await
-    .expect("Err creating client");
-
-    if let Err(why) = client.start().await {
-        println!("Client error: {why:?}");
-    }
-
-    Ok(())
+impl TypeMapKey for Env {
+    type Value = Env;
 }
 
-async fn setup_db_connection(env: &Env) -> Result<Pool<MySql>, HelibotError> {
-    let pool = MySqlPoolOptions::new()
-        .max_connections(5)
-        .connect(env.mysql_url.as_str())
-        .await?;
-    let row: (i64,) = sqlx::query_as("SELECT 150").fetch_one(&pool).await?;
-    assert_eq!(row.0, 150); //test connection
-    Ok(pool)
-}
-
-fn retrieve_env() -> Result<Env, errors::EnvVarError> {
-    dotenv().map_err(EnvVarError::DotEnvModuleError)?;
+fn get_env() -> Result<Env, errors::EnvVarError> {
+    dotenvy::dotenv().map_err(EnvVarError::DotEnvModuleError)?;
     fn get_var(var: &str) -> Result<String, errors::EnvVarError> {
         env::var_os(var)
             .ok_or(EnvVarError::VarNotFound)?

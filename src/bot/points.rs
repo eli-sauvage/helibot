@@ -1,9 +1,8 @@
 use crate::{
-    bot::{sessions::ActiveSession, usernames::UsernameManager},
-    errors::HelibotError,
+    bot::{sessions::ActiveSession, usernames::UsernameManager}, db_connection::DbConnection, errors::HelibotError
 };
 
-use serenity::all::{GuildId, UserId};
+use serenity::all::{Context, GuildId, UserId};
 use sqlx::{types::time::OffsetDateTime, MySql, Pool};
 use std::collections::HashSet;
 
@@ -116,10 +115,12 @@ pub fn parse_to_tuple(
 }
 
 pub async fn construct_points_md_table(
-    pool: &Pool<MySql>,
+    ctx: &Context,
     guild_id: &GuildId,
-    username_manager: &UsernameManager,
 ) -> Result<String, HelibotError> {
+    let client_data = ctx.data.read().await;
+    let pool = client_data.get::<DbConnection>().unwrap();
+    let username_manager = client_data.get::<UsernameManager>().unwrap();
     let points = get_points_for_guild(pool, guild_id).await?;
     let mut points_fmt = parse_to_tuple(username_manager, &points);
     points_fmt.insert(0, ("User Name".into(), "Score".into()));

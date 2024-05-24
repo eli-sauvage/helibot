@@ -1,9 +1,10 @@
 use crate::{
-    errors::HelibotError,
     bot::{
         points::{self, Point},
         usernames::UsernameManager,
     },
+    db_connection::DbConnection,
+    errors::HelibotError,
 };
 
 use serenity::{
@@ -12,8 +13,8 @@ use serenity::{
         EditMessage, GetMessages, GuildId, Message, ReactionType, Ready, Timestamp,
     },
     futures::future,
+    prelude::TypeMapKey,
 };
-use sqlx::{MySql, Pool};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Default)]
@@ -21,6 +22,10 @@ pub struct MessageBuilder {
     channel_ids: HashMap<GuildId, ChannelId>,
     messages: HashMap<GuildId, (Message, HashSet<Point>)>,
 }
+impl TypeMapKey for MessageBuilder {
+    type Value = MessageBuilder;
+}
+
 impl MessageBuilder {
     pub async fn new(
         ctx: &Context,
@@ -67,13 +72,10 @@ impl MessageBuilder {
         })
     }
 
-    pub async fn print_points_in_all_guilds(
-        &mut self,
-        ctx: &Context,
-        pool: &Pool<MySql>,
-        guild_ids: Vec<&GuildId>,
-        username_manager: &UsernameManager,
-    ) {
+    pub async fn print_points_in_all_guilds(&mut self, ctx: &Context, guild_ids: Vec<&GuildId>) {
+        let client_data = ctx.data.read().await;
+        let pool = client_data.get::<DbConnection>().unwrap();
+        let username_manager = client_data.get::<UsernameManager>().unwrap();
         for guild_id in guild_ids {
             let channel_id = match self.channel_ids.get(guild_id) {
                 Some(channel_id) => channel_id,
@@ -94,9 +96,10 @@ impl MessageBuilder {
             let embed = build_point_message(points::parse_to_tuple(username_manager, &points));
 
             let edit_result = match self.messages.get_mut(guild_id) {
-                Some(old_message) => {
-                    Some(try_edit_old_points_message(ctx, &embed, &points, old_message).await)
-                }
+                Some((ref mut old_message_ref, old_points)) => Some(
+                    try_edit_old_points_message(ctx, &embed, &points, &old_points, old_message_ref)
+                        .await,
+                ),
                 None => None,
             };
             match edit_result {
@@ -185,17 +188,15 @@ async fn try_edit_old_points_message(
     ctx: &Context,
     embed: &CreateEmbed,
     points: &HashSet<Point>,
-    old_message_points: &mut (Message, HashSet<Point>),
+    old_points: &HashSet<Point>,
+    old_message: &mut Message,
 ) -> Result<(), HelibotError> {
-    let (old_message, old_points) = old_message_points;
-    if points == old_points {
-        return Ok(());
+    if points != old_points {
+        old_message
+            .edit(ctx, EditMessage::new().embed(embed.to_owned()))
+            .await
+            .map_err(HelibotError::SerenityError)?;
     }
-    old_message
-        .clone()
-        .edit(ctx, EditMessage::new().embed(embed.to_owned()))
-        .await
-        .map_err(HelibotError::SerenityError)?;
     Ok(())
 }
 
