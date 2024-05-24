@@ -1,4 +1,4 @@
-use dotenv::dotenv;
+use dotenvy::dotenv;
 use errors::{EnvVarError, HelibotError};
 use serenity::{all::GatewayIntents, Client};
 use sessions::ActiveSession;
