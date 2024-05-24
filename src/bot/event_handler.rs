@@ -56,7 +56,7 @@ impl EventHandler for Handler {
 
         let thread_client_data = ctx.data.clone();
         tokio::spawn(async move {
-            let mut interval = interval(Duration::from_secs(10));
+            let mut interval = interval(Duration::from_secs(3*60));
             let mut client_data = thread_client_data.write().await;
             loop {
                 tokio::select! {
