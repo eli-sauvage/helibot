@@ -1,6 +1,6 @@
 use crate::{
     bot::{
-        message::MessageBuilder, points, sessions::ActiveSession, usernames::UsernameManager, voice,
+        message::MessagesManager, points, sessions::ActiveSession, usernames::UsernameManager, voice,
     },
     db_connection::DbConnection,
     Env,
@@ -37,7 +37,7 @@ impl EventHandler for Handler {
             println!("could not instanciate active sessions on startup: {err:?}");
         }
 
-        let message_builder = match MessageBuilder::new(
+        let message_builder = match MessagesManager::new(
             &ctx,
             &ready,
             &client_data.get::<Env>().unwrap().point_channel_name,
@@ -51,8 +51,10 @@ impl EventHandler for Handler {
         };
 
         client_data.insert::<UsernameManager>(username_manager);
-        client_data.insert::<MessageBuilder>(message_builder);
+        client_data.insert::<MessagesManager>(message_builder);
         drop(client_data);
+
+        println!("here");
 
         let thread_client_data = ctx.data.clone();
         tokio::spawn(async move {
@@ -61,7 +63,8 @@ impl EventHandler for Handler {
             loop {
                 tokio::select! {
                     _ = interval.tick() => {
-                        client_data.get_mut::<MessageBuilder>().unwrap()
+                        println!("tick");
+                        client_data.get_mut::<MessagesManager>().unwrap()
                         .print_points_in_all_guilds(
                             &ctx,
                             ready.guilds.iter().map(|guild| &guild.id).collect(),
@@ -98,7 +101,7 @@ impl EventHandler for Handler {
             match component.data.custom_id.as_str() {
                 "refresh" => {
                     client_data
-                        .get_mut::<MessageBuilder>()
+                        .get_mut::<MessagesManager>()
                         .unwrap()
                         .print_points_in_all_guilds(&ctx, ctx.cache.guilds().iter().collect())
                         .await;
