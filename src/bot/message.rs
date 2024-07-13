@@ -16,11 +16,12 @@ use serenity::{
     prelude::TypeMapKey,
 };
 use std::collections::{HashMap, HashSet};
+use tokio::sync::RwLock;
 
 #[derive(Default)]
 pub struct MessagesManager {
     channel_ids: HashMap<GuildId, ChannelId>,
-    messages: HashMap<GuildId, (Message, HashSet<Point>)>,
+    messages: RwLock<HashMap<GuildId, (Message, HashSet<Point>)>>,
 }
 impl TypeMapKey for MessagesManager {
     type Value = MessagesManager;
@@ -68,11 +69,11 @@ impl MessagesManager {
 
         Ok(MessagesManager {
             channel_ids,
-            messages: HashMap::new(),
+            messages: RwLock::new(HashMap::new()),
         })
     }
 
-    pub async fn print_points_in_all_guilds(&mut self, ctx: &Context, guild_ids: Vec<&GuildId>) {
+    pub async fn print_points_in_all_guilds(&self, ctx: &Context, guild_ids: Vec<&GuildId>) {
         let client_data = ctx.data.read().await;
         let pool = client_data.get::<DbConnection>().unwrap();
         let username_manager = client_data.get::<UsernameManager>().unwrap();
@@ -95,34 +96,38 @@ impl MessagesManager {
             };
 
             let embed = create_embed(points::parse_to_tuple(username_manager, &points));
-            println!("point message created");
-        }
-    }
-    pub async fn send_message(&mut self, ctx: &Context, message: BuiltMessage<'_>) {
-        let edit_result = match self.messages.get_mut(message.guild_id) {
-            Some((ref mut old_message_ref, old_points)) => Some(
-                try_edit_old_points_message(ctx, &embed, &points, old_points, old_message_ref)
-                    .await,
-            ),
-            None => None,
-        };
-        println!("edit result : {edit_result:?}");
-        match edit_result {
-            Some(Ok(_)) => {}
-            None | Some(Err(_)) => match send_new_msg(ctx, channel_id, embed).await {
-                Ok(new_msg) => {
-                    if let Some(old_message_points) = self.messages.get_mut(guild_id) {
-                        *old_message_points = (new_msg, points);
-                    } else {
-                        self.messages.insert(guild_id.to_owned(), (new_msg, points));
-                    }
+            let mut message_mut = self.messages.write().await;
+            let message_guild_mut = message_mut.get_mut(guild_id);
+            //message_guild_mut.get_mut(guild_id);
+            let edit_success = if let Some((old_message_ref, old_points)) = message_guild_mut {
+                println!("bbb1");
+                if old_points != &points {
+                    try_edit_old_points_message(ctx, &embed, old_message_ref)
+                        .await
+                        .is_ok()
+                } else {
+                    false
                 }
-                Err(e) => eprintln!(
-                    "could not send new msg in channel {} in guild {} : {e:?}",
-                    channel_id.get(),
-                    guild_id.get()
-                ),
-            },
+            } else {
+                false
+            };
+            if !edit_success {
+                match send_new_msg(ctx, channel_id, embed).await {
+                    Ok(new_msg) => {
+                        if let Some(old_message_points) = message_guild_mut {
+                            *old_message_points = (new_msg, points);
+                        } else {
+                            message_mut.insert(guild_id.to_owned(), (new_msg, points));
+                        }
+                    }
+                    Err(e) => eprintln!(
+                        "could not send new msg in channel {} in guild {} : {e:?}",
+                        channel_id.get(),
+                        guild_id.get()
+                    ),
+                }
+            }
+            println!("point message created");
         }
     }
 }
@@ -188,26 +193,15 @@ fn create_embed(mut points: Vec<(String, String)>) -> CreateEmbed {
         .timestamp(Timestamp::now())
 }
 
-struct BuiltMessage<'a> {
-    embed: CreateEmbed,
-    channel_id: &'a ChannelId,
-    guild_id: &'a GuildId,
-}
-
 async fn try_edit_old_points_message(
     ctx: &Context,
     embed: &CreateEmbed,
-    points: &HashSet<Point>,
-    old_points: &HashSet<Point>,
     old_message: &mut Message,
 ) -> Result<(), HelibotError> {
-    if points != old_points {
-        old_message
-            .edit(ctx, EditMessage::new().embed(embed.to_owned()))
-            .await
-            .map_err(HelibotError::SerenityError)?;
-    }
-    Ok(())
+    old_message
+        .edit(ctx, EditMessage::new().embed(embed.to_owned()))
+        .await
+        .map_err(HelibotError::SerenityError)
 }
 
 async fn delete_old_messages_in_channel(ctx: &Context, channel_id: &ChannelId) {

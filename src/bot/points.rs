@@ -8,7 +8,7 @@ use serenity::all::{Context, GuildId, UserId};
 use sqlx::{types::time::OffsetDateTime, MySql, Pool};
 use std::collections::HashSet;
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Point {
     pub id: u32,
     pub points: u32,

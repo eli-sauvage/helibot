@@ -1,6 +1,7 @@
 use crate::{
     bot::{
-        message::MessagesManager, points, sessions::ActiveSession, usernames::UsernameManager, voice,
+        message::MessagesManager, points, sessions::ActiveSession, usernames::UsernameManager,
+        voice,
     },
     db_connection::DbConnection,
     Env,
@@ -54,18 +55,14 @@ impl EventHandler for Handler {
         client_data.insert::<MessagesManager>(message_builder);
         drop(client_data);
 
-        println!("here");
-
         let thread_client_data = ctx.data.clone();
         tokio::spawn(async move {
-            let mut interval = interval(Duration::from_secs(3*60));
-            let mut client_data = thread_client_data.write().await;
+            let mut interval = interval(Duration::from_secs(3 * 60));
             loop {
                 tokio::select! {
                     _ = interval.tick() => {
                         println!("tick");
-                        client_data.get_mut::<MessagesManager>().unwrap()
-                        .print_points_in_all_guilds(
+                        thread_client_data.read().await.get::<MessagesManager>().unwrap().print_points_in_all_guilds(
                             &ctx,
                             ready.guilds.iter().map(|guild| &guild.id).collect(),
                         )
@@ -95,13 +92,14 @@ impl EventHandler for Handler {
     }
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
-        let mut client_data = ctx.data.write().await;
+        let client_data = ctx.data.read().await;
 
         if let Interaction::Component(component) = interaction {
             match component.data.custom_id.as_str() {
                 "refresh" => {
+                    println!("refresh");
                     client_data
-                        .get_mut::<MessagesManager>()
+                        .get::<MessagesManager>()
                         .unwrap()
                         .print_points_in_all_guilds(&ctx, ctx.cache.guilds().iter().collect())
                         .await;
