@@ -79,8 +79,12 @@ pub async fn get_points_for_guild(
     let active_sessions =
         ActiveSession::get_all_active_sessions_for_guild(pool, guild_id.get()).await?;
 
+    let to_add = if !active_sessions.is_empty() {
+        (OffsetDateTime::now_utc() - active_sessions[0].begin).whole_seconds() as u32
+    } else {
+        0
+    };
     active_sessions.iter().for_each(|active_session| {
-        let to_add = (OffsetDateTime::now_utc() - active_sessions[0].begin).whole_seconds() as u32;
         match points
             .iter_mut()
             .find(|point| point.user_id == active_session.user_id)
@@ -96,6 +100,29 @@ pub async fn get_points_for_guild(
     });
 
     Ok(HashSet::from_iter(points.into_iter()))
+}
+
+pub async fn get_points_for_user(
+    pool: &Pool<MySql>,
+    user_id: &UserId,
+    guild_id: &GuildId,
+) -> Result<Option<Point>, HelibotError> {
+    let mut point = sqlx::query_as!(
+        Point,
+        "SELECT * from Points WHERE guild_id = ? AND user_id = ?",
+        guild_id.get(),
+        user_id.get()
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    let session = ActiveSession::get(pool, user_id.get(), guild_id.get()).await?;
+    if let Some(p) = point.as_mut() {
+        if let Some(session) = session {
+            p.points += (OffsetDateTime::now_utc() - session.begin).whole_seconds() as u32;
+        }
+    }
+    Ok(point)
 }
 
 type Username = String;

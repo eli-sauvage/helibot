@@ -1,0 +1,92 @@
+point_channel_name = "points-test-test"
+
+
+[[roles]]
+seuil = 0
+role_name = "Les Subalternes Obscurs"
+
+[[roles]]
+seuil = 10
+role_name = "Les Cul-terreux"
+
+[[roles]]
+seuil = 50
+role_name = "Strapontin"
+
+[[roles]]
+seuil = 100
+role_name = "Damoiseau"
+
+[[roles]]
+seuil = 10000
+role_name = "Crésus"
+
+[[roles]]
+seuil = 15000
+role_name = "Wakam"
+
+[[roles]]
+seuil = 20000
+role_name = "Érudit"
+
+[[roles]]
+seuil = 25000
+role_name = "Abu Yaqub"
+
+[[roles]]
+seuil = 50000
+role_name = "Batracien"
+
+[[roles]]
+seuil = 75000
+role_name = "Hokage"
+
+[[roles]]
+seuil = 100000
+role_name = "Bouf Royal"
+
+
+
+# [[roles]]
+# seuil = 0
+# role_name = "Les Subalternes Obscurs"
+
+# [[roles]]
+# seuil = 500
+# role_name = "Les Cul-terreux"
+
+# [[roles]]
+# seuil = 1500
+# role_name = "Strapontin"
+
+# [[roles]]
+# seuil = 5000
+# role_name = "Damoiseau"
+
+# [[roles]]
+# seuil = 10000
+# role_name = "Crésus"
+
+# [[roles]]
+# seuil = 15000
+# role_name = "Wakam"
+
+# [[roles]]
+# seuil = 20000
+# role_name = "Érudit"
+
+# [[roles]]
+# seuil = 25000
+# role_name = "Abu Yaqub"
+
+# [[roles]]
+# seuil = 50000
+# role_name = "Batracien"
+
+# [[roles]]
+# seuil = 75000
+# role_name = "Hokage"
+
+# [[roles]]
+# seuil = 100000
+# role_name = "Bouf Royal"

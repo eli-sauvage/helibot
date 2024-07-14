@@ -70,6 +70,15 @@ impl ActiveSession {
         Ok(res)
     }
 
+    pub async fn get_all_active_sessions(
+        pool: &Pool<MySql>,
+    ) -> Result<Vec<ActiveSession>, HelibotError> {
+        let res = sqlx::query_as!(ActiveSession, "SELECT * from ActiveSessions",)
+            .fetch_all(pool)
+            .await?;
+        Ok(res)
+    }
+
     pub async fn create(
         pool: &Pool<MySql>,
         user_id: u64,

@@ -1,6 +1,7 @@
 use crate::{
     bot::{
         points::{self, Point},
+        roles::RoleManager,
         usernames::UsernameManager,
     },
     db_connection::DbConnection,
@@ -15,8 +16,11 @@ use serenity::{
     futures::future,
     prelude::TypeMapKey,
 };
+use sqlx::{MySql, Pool};
 use std::collections::{HashMap, HashSet};
 use tokio::sync::RwLock;
+
+use super::roles::Seuil;
 
 #[derive(Default)]
 pub struct MessagesManager {
@@ -73,61 +77,77 @@ impl MessagesManager {
         })
     }
 
-    pub async fn print_points_in_all_guilds(&self, ctx: &Context, guild_ids: Vec<&GuildId>) {
+    pub async fn print_points_in_guild(
+        &self,
+        ctx: &Context,
+        pool: &Pool<MySql>,
+        username_manager: &UsernameManager,
+        role_manager: &RoleManager,
+        guild_id: &GuildId,
+    ) {
+        let channel_id = match self.channel_ids.get(guild_id) {
+            Some(channel_id) => channel_id,
+            None => {
+                eprintln!("points channel not found in guild {}", guild_id);
+                return;
+            }
+        };
+
+        let points = match points::get_points_for_guild(pool, guild_id).await {
+            Ok(points) => points,
+            Err(e) => {
+                eprintln!("could not get points for guild {} : {e:?}", e);
+                return;
+            }
+        };
+
+        let embed = create_embed(
+            points::parse_to_tuple(username_manager, &points),
+            role_manager.get_seuils(),
+        );
+        let mut message_mut = self.messages.write().await;
+        let message_guild_mut = message_mut.get_mut(guild_id);
+        //message_guild_mut.get_mut(guild_id);
+        let edit_success = if let Some((old_message_ref, old_points)) = message_guild_mut {
+            println!("bbb1");
+            if old_points != &points {
+                try_edit_old_points_message(ctx, &embed, old_message_ref)
+                    .await
+                    .is_ok()
+            } else {
+                false
+            }
+        } else {
+            false
+        };
+        if !edit_success {
+            match send_new_msg(ctx, channel_id, embed).await {
+                Ok(new_msg) => {
+                    if let Some(old_message_points) = message_guild_mut {
+                        *old_message_points = (new_msg, points);
+                    } else {
+                        message_mut.insert(guild_id.to_owned(), (new_msg, points));
+                    }
+                }
+                Err(e) => eprintln!(
+                    "could not send new msg in channel {} in guild {} : {e:?}",
+                    channel_id.get(),
+                    guild_id.get()
+                ),
+            }
+        }
+        println!("point message created");
+    }
+
+    pub async fn print_points_in_all_guilds(&self, ctx: &Context, guild_ids: &Vec<GuildId>) {
         let client_data = ctx.data.read().await;
         let pool = client_data.get::<DbConnection>().unwrap();
         let username_manager = client_data.get::<UsernameManager>().unwrap();
+        let role_manager = client_data.get::<RoleManager>().unwrap();
         println!("guild_ids length = {}", guild_ids.len());
         for guild_id in guild_ids {
-            let channel_id = match self.channel_ids.get(guild_id) {
-                Some(channel_id) => channel_id,
-                None => {
-                    eprintln!("points channel not found in guild {}", guild_id);
-                    continue;
-                }
-            };
-
-            let points = match points::get_points_for_guild(pool, guild_id).await {
-                Ok(points) => points,
-                Err(e) => {
-                    eprintln!("could not get points for guild {} : {e:?}", e);
-                    continue;
-                }
-            };
-
-            let embed = create_embed(points::parse_to_tuple(username_manager, &points));
-            let mut message_mut = self.messages.write().await;
-            let message_guild_mut = message_mut.get_mut(guild_id);
-            //message_guild_mut.get_mut(guild_id);
-            let edit_success = if let Some((old_message_ref, old_points)) = message_guild_mut {
-                println!("bbb1");
-                if old_points != &points {
-                    try_edit_old_points_message(ctx, &embed, old_message_ref)
-                        .await
-                        .is_ok()
-                } else {
-                    false
-                }
-            } else {
-                false
-            };
-            if !edit_success {
-                match send_new_msg(ctx, channel_id, embed).await {
-                    Ok(new_msg) => {
-                        if let Some(old_message_points) = message_guild_mut {
-                            *old_message_points = (new_msg, points);
-                        } else {
-                            message_mut.insert(guild_id.to_owned(), (new_msg, points));
-                        }
-                    }
-                    Err(e) => eprintln!(
-                        "could not send new msg in channel {} in guild {} : {e:?}",
-                        channel_id.get(),
-                        guild_id.get()
-                    ),
-                }
-            }
-            println!("point message created");
+            self.print_points_in_guild(ctx, pool, username_manager, role_manager, guild_id)
+                .await;
         }
     }
 }
@@ -159,7 +179,7 @@ async fn send_new_msg(
         .map_err(HelibotError::SerenityError)
 }
 
-fn create_embed(mut points: Vec<(String, String)>) -> CreateEmbed {
+fn create_embed(mut points: Vec<(String, String)>, roles: &[Seuil]) -> CreateEmbed {
     points = points
         .iter()
         .enumerate()
@@ -183,7 +203,11 @@ fn create_embed(mut points: Vec<(String, String)>) -> CreateEmbed {
         .collect();
 
     let footer = CreateEmbedFooter::new(
-    "subalternes: 0, cul-terreux: 500, strapontin: 1500, damoiseau: 5000, cresus: 10000, wakam: 15000, erudit: 20000, abu yaqub: 25000, batracien: 50000, hokage: 75000, bouf royal: 100000"
+        roles
+            .iter()
+            .map(|r| format!("{} : {}", r.role_name, r.seuil))
+            .collect::<Vec<String>>()
+            .join(", "),
     );
     CreateEmbed::new()
         .title("Helibot scores. 1 minute en vocal = 1 point")

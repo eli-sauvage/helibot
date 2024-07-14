@@ -1,0 +1,2 @@
+add guild roles when bot joins a new guild
+poll cmd
