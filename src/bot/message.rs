@@ -198,6 +198,7 @@ fn create_embed(mut points: Vec<(String, String)>, roles: &[Seuil]) -> CreateEmb
 
     let fields: Vec<(String, String, bool)> = points
         .iter()
+        .take(25)
         .map(|point| (point.to_owned().0, point.to_owned().1, true))
         .collect();
 
