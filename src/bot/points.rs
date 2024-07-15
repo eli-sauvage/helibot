@@ -14,6 +14,7 @@ pub struct Point {
     pub points: u32,
     pub guild_id: u64,
     pub user_id: u64,
+    pub score_historique: Option<u32>
 }
 
 pub async fn add_points(
@@ -94,7 +95,7 @@ pub async fn get_points_for_guild(
             }
             None => {
                 println!("manually adding points instance for user {} bc Points row does not exist yet value = {}", active_session.user_id, to_add);
-                points.push(Point { id: 0, points: to_add, guild_id: active_session.guild_id, user_id: active_session.user_id })
+                points.push(Point { id: 0, points: to_add, score_historique: None, guild_id: active_session.guild_id, user_id: active_session.user_id })
             }
         }
     });

@@ -13,7 +13,8 @@ CREATE TABLE Points (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT UNSIGNED NOT NULL,
     guild_id BIGINT UNSIGNED NOT NULL,
-    points INT UNSIGNED NOT NULL
+    points INT UNSIGNED NOT NULL,
+    score_historique INT UNSIGNED
 );
 
 ALTER TABLE Points ADD CONSTRAINT uq_Points UNIQUE(user_id, guild_id);

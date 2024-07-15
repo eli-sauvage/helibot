@@ -42,6 +42,16 @@
           "char_set": 63,
           "max_size": 10
         }
+      },
+      {
+        "ordinal": 4,
+        "name": "score_historique",
+        "type_info": {
+          "type": "Long",
+          "flags": "UNSIGNED",
+          "char_set": 63,
+          "max_size": 10
+        }
       }
     ],
     "parameters": {
@@ -51,7 +61,8 @@
       false,
       false,
       false,
-      false
+      false,
+      true
     ]
   },
   "hash": "47e81b23686ccf8f5c98f3efa373599f912e449053ed5adf0e72e1b2f71af9c8"
