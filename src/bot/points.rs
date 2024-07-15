@@ -81,7 +81,7 @@ pub async fn get_points_for_guild(
         ActiveSession::get_all_active_sessions_for_guild(pool, guild_id.get()).await?;
 
     let to_add = if !active_sessions.is_empty() {
-        (OffsetDateTime::now_utc() - active_sessions[0].begin).whole_minutes() as u32
+        (OffsetDateTime::now_utc() - active_sessions[0].begin).whole_seconds() as u32
     } else {
         0
     };
@@ -120,7 +120,7 @@ pub async fn get_points_for_user(
     let session = ActiveSession::get(pool, user_id.get(), guild_id.get()).await?;
     if let Some(p) = point.as_mut() {
         if let Some(session) = session {
-            p.points += (OffsetDateTime::now_utc() - session.begin).whole_minutes() as u32;
+            p.points += (OffsetDateTime::now_utc() - session.begin).whole_seconds() as u32;
         }
     }
     Ok(point)
@@ -139,7 +139,7 @@ pub fn parse_to_tuple(
         .filter_map(|point| {
             username_manager
                 .get_username_from_cache(GuildId::new(point.guild_id), UserId::new(point.user_id))
-                .map(|username| (username.to_string(), point.points.to_string()))
+                .map(|username| (username.to_string(), (point.points/60).to_string()))
         })
         .collect()
 }

@@ -21,7 +21,7 @@ impl ActiveSession {
             .await?
             .current_timestamp
             .assume_offset(self.begin.offset());
-        let points_to_add = (now - self.begin).whole_minutes();
+        let points_to_add = (now - self.begin).whole_seconds();
 
         let new_points =
             points::add_points(pool, self.user_id, self.guild_id, points_to_add).await?;
