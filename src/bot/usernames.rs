@@ -32,6 +32,7 @@ impl UsernameManager {
             match UserId::new(point.user_id).to_user(ctx).await {
                 Ok(user) => {
                     let username = user.nick_in(ctx, guild_id).await.unwrap_or(user.name);
+                    println!("adding user {username} to username manager");
                     valid_users.insert((guild_id, user.id), username);
                 }
                 Err(e) => {

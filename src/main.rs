@@ -30,6 +30,8 @@ async fn main() -> Result<(), errors::HelibotError> {
     client_data.insert::<Env>(env);
     drop(client_data);
 
+    println!("starting client");
+
     if let Err(err) = client.start().await {
         println!("Client error: {err:?}");
     }
