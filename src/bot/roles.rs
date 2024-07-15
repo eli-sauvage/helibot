@@ -58,7 +58,14 @@ impl RoleManager {
             roles.insert(guild_id.to_owned(), roles_for_guild);
         }
 
-        println!("instanciate role w/ seuils : {seuils:?}");
+        println!(
+            "instanciate role w/ seuils : {}",
+            seuils
+                .iter()
+                .map(|s| format!("{}:{}", s.role_name, s.seuil))
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
 
         Ok(RoleManager {
             seuils,
@@ -134,40 +141,30 @@ impl RoleManager {
                     .find(|role_seuil| &role_seuil.role.id == r)
             })
             .collect();
-        println!(
-            "roles_user = {:?}",
-            roles_user
-                .iter()
-                .map(|r| &r.role.name)
-                .collect::<Vec<&String>>()
-        );
 
         let computed_role = helibot_roles
             .iter()
-            .reduce(
-                |acc, role| {
-                    if point.points > role.seuil {
-                        role
-                    } else {
-                        acc
-                    }
-                },
-            )
+            .reduce(|acc, role| {
+                if point.points >= role.seuil {
+                    role
+                } else {
+                    acc
+                }
+            })
             .unwrap();
 
-        println!("computed_role = {:?}", computed_role.role.name);
         for role_to_remove in roles_user.iter().filter(|r| **r != computed_role) {
             member.remove_role(&ctx, role_to_remove.role.id).await?;
             println!(
                 "removed role {} for user {:?}",
-                role_to_remove.role.name, &member.nick
+                role_to_remove.role.name, &member.user.name
             );
         }
         if !roles_user.contains(&computed_role) {
             member.add_role(&ctx, computed_role.role.id).await?;
             println!(
                 "added role {} for user {:?}",
-                computed_role.role.name, &member.nick
+                computed_role.role.name, &member.user.name
             );
         }
 

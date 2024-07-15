@@ -9,13 +9,13 @@ use crate::{
 
 use serenity::{
     all::{
-        Context, CreateInteractionResponseMessage, EventHandler, GuildId, Interaction, Ready,
-        UserId, VoiceState,
+        ChannelType, Context, CreateInteractionResponseMessage, EventHandler, GuildId, Interaction,
+        Ready, UserId, VoiceState,
     },
     async_trait,
 };
-use std::time::Duration;
-use tokio::time::interval;
+use std::{sync::Arc, time::Duration};
+use tokio::{sync::RwLock, time::interval};
 
 pub struct Handler;
 
@@ -67,18 +67,45 @@ impl EventHandler for Handler {
             }
         };
 
+        println!(
+            "helibot present in guilds {}",
+            guild_ids
+                .iter()
+                .filter_map(|gid| gid.name(&ctx))
+                .collect::<Vec<_>>()
+                .join(", "),
+        );
+
         for guild_id in &guild_ids {
-            if let Ok(guild) = guild_id.to_partial_guild(&ctx).await {
-                if let Ok(members) = guild.members(&ctx, None, None).await {
-                    for member in members {
-                        let _ = roles_manager
-                            .check_role_for_user(pool, &member.user.id, guild_id, &ctx)
-                            .await;
-                    }
+            let guild = ctx.cache.clone().guild(guild_id).unwrap().clone();
+            if let Ok(members) = guild.members(&ctx, None, None).await {
+                for member in members {
+                    let _ = roles_manager
+                        .check_role_for_user(pool, &member.user.id, guild_id, &ctx)
+                        .await;
+                }
+            }
+            let channels = guild.channels(&ctx).await;
+            let voice_channels: Vec<_> = channels
+                .iter()
+                .flat_map(|channels| {
+                    channels
+                        .iter()
+                        .map(|(_, channel)| channel)
+                        .filter(|channel| channel.kind == ChannelType::Voice)
+                })
+                .collect();
+            let g = Arc::new(RwLock::new(
+                ctx.cache.clone().guild(guild_id).unwrap().clone(),
+            ));
+            for voice_channel in voice_channels {
+                let r =
+                    voice::update_voice_sessions(&client_data, &voice_channel.id, g.clone()).await;
+                if let Err(e) = r {
+                    eprintln!("could not update voice session on bot startup, guild = {} channel = {}: {e:?}", guild_id, voice_channel.id);
                 }
             }
         }
-
         client_data.insert::<UsernameManager>(username_manager);
         client_data.insert::<MessagesManager>(message_builder);
         client_data.insert::<RoleManager>(roles_manager);
@@ -86,11 +113,10 @@ impl EventHandler for Handler {
 
         let thread_client_data = ctx.data.clone();
         tokio::spawn(async move {
-            let mut interval = interval(Duration::from_secs(3 * 60));
+            let mut interval = interval(Duration::from_secs(3*60));
             loop {
                 tokio::select! {
                     _ = interval.tick() => {
-                        println!("tick");
                         let client_data = thread_client_data.read().await;
                         client_data.get::<MessagesManager>().unwrap().print_points_in_all_guilds(
                             &ctx,
@@ -125,15 +151,38 @@ impl EventHandler for Handler {
         old_state: Option<VoiceState>,
         new_state: VoiceState,
     ) {
+        let g = Arc::new(RwLock::new(
+            ctx.cache
+                .clone()
+                .guild(new_state.guild_id.unwrap())
+                .unwrap()
+                .clone(),
+        ));
+        let mut client_data = ctx.data.write().await;
         if let Some(member) = &new_state.member {
-            ctx.data
-                .write()
-                .await
+            client_data
                 .get_mut::<UsernameManager>()
                 .unwrap()
                 .add_user_if_not_in_cache(member);
-
-            voice::compute_voice_state_change(&ctx, &new_state, &old_state, &member.guild_id).await;
+            if let Some(old_channel) = &old_state.as_ref().and_then(|os| os.channel_id) {
+                let r = voice::update_voice_sessions(&client_data, old_channel, g.clone()).await;
+                if let Err(e) = r {
+                    eprintln!(
+                        "could not update channel {} in guild {:?} : {e:?}",
+                        old_channel,
+                        &old_state.map(|os| os.guild_id)
+                    )
+                }
+            }
+            if let Some(new_channel) = new_state.channel_id {
+                let r = voice::update_voice_sessions(&client_data, &new_channel, g.clone()).await;
+                if let Err(e) = r {
+                    eprintln!(
+                        "could not update channel {} in guild {:?} : {e:?}",
+                        new_channel, &new_state.guild_id
+                    )
+                }
+            }
         };
     }
 
@@ -143,9 +192,7 @@ impl EventHandler for Handler {
         if let Interaction::Component(component) = interaction {
             match component.data.custom_id.as_str() {
                 "refresh" => {
-                    println!("refresh");
                     let pool = client_data.get::<DbConnection>().unwrap();
-                    let username_manager = client_data.get::<UsernameManager>().unwrap();
                     let role_manager = client_data.get::<RoleManager>().unwrap();
                     let guild = match component.guild_id.map(|g_id| g_id.to_partial_guild(&ctx)) {
                         Some(g_id) => g_id.await,
@@ -158,13 +205,7 @@ impl EventHandler for Handler {
                     client_data
                         .get::<MessagesManager>()
                         .unwrap()
-                        .print_points_in_guild(
-                            &ctx,
-                            pool,
-                            username_manager,
-                            role_manager,
-                            &guild.id,
-                        )
+                        .print_points_in_guild(&ctx, &client_data, &guild.id)
                         .await;
                     component
                         .create_response(

@@ -6,7 +6,7 @@ use serenity::{
 };
 use sqlx::{types::time::OffsetDateTime, MySql, Pool};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ActiveSession {
     id: u32,
     pub user_id: u64,
@@ -21,7 +21,7 @@ impl ActiveSession {
             .await?
             .current_timestamp
             .assume_offset(self.begin.offset());
-        let points_to_add = (now - self.begin).whole_seconds();
+        let points_to_add = (now - self.begin).whole_minutes();
 
         let new_points =
             points::add_points(pool, self.user_id, self.guild_id, points_to_add).await?;

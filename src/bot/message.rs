@@ -14,9 +14,8 @@ use serenity::{
         EditMessage, GetMessages, GuildId, Message, ReactionType, Ready, Timestamp,
     },
     futures::future,
-    prelude::TypeMapKey,
+    prelude::{TypeMap, TypeMapKey},
 };
-use sqlx::{MySql, Pool};
 use std::collections::{HashMap, HashSet};
 use tokio::sync::RwLock;
 
@@ -80,11 +79,12 @@ impl MessagesManager {
     pub async fn print_points_in_guild(
         &self,
         ctx: &Context,
-        pool: &Pool<MySql>,
-        username_manager: &UsernameManager,
-        role_manager: &RoleManager,
+        client_data: &TypeMap,
         guild_id: &GuildId,
     ) {
+        let pool = client_data.get::<DbConnection>().unwrap();
+        let username_manager = client_data.get::<UsernameManager>().unwrap();
+        let role_manager = client_data.get::<RoleManager>().unwrap();
         let channel_id = match self.channel_ids.get(guild_id) {
             Some(channel_id) => channel_id,
             None => {
@@ -109,13 +109,12 @@ impl MessagesManager {
         let message_guild_mut = message_mut.get_mut(guild_id);
         //message_guild_mut.get_mut(guild_id);
         let edit_success = if let Some((old_message_ref, old_points)) = message_guild_mut {
-            println!("bbb1");
             if old_points != &points {
-                try_edit_old_points_message(ctx, &embed, old_message_ref)
-                    .await
-                    .is_ok()
+                let edit = try_edit_old_points_message(ctx, &embed, old_message_ref).await;
+
+                edit.is_ok()
             } else {
-                false
+                true // no need to update
             }
         } else {
             false
@@ -128,6 +127,11 @@ impl MessagesManager {
                     } else {
                         message_mut.insert(guild_id.to_owned(), (new_msg, points));
                     }
+                    println!(
+                        "point message created in guild {}<{}>",
+                        guild_id.name(ctx).unwrap_or("".into()),
+                        guild_id.get()
+                    );
                 }
                 Err(e) => eprintln!(
                     "could not send new msg in channel {} in guild {} : {e:?}",
@@ -136,17 +140,12 @@ impl MessagesManager {
                 ),
             }
         }
-        println!("point message created");
     }
 
     pub async fn print_points_in_all_guilds(&self, ctx: &Context, guild_ids: &Vec<GuildId>) {
         let client_data = ctx.data.read().await;
-        let pool = client_data.get::<DbConnection>().unwrap();
-        let username_manager = client_data.get::<UsernameManager>().unwrap();
-        let role_manager = client_data.get::<RoleManager>().unwrap();
-        println!("guild_ids length = {}", guild_ids.len());
         for guild_id in guild_ids {
-            self.print_points_in_guild(ctx, pool, username_manager, role_manager, guild_id)
+            self.print_points_in_guild(ctx, &client_data, guild_id)
                 .await;
         }
     }
