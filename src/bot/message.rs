@@ -113,13 +113,6 @@ impl MessagesManager {
             points::parse_to_tuple(&points, &active_uid),
             role_manager.get_seuils(),
         );
-        if guild_id.get() == 544953131205918720 {
-            println!(
-                "computed = {:?}",
-                points::parse_to_tuple(&points, &active_uid)
-            );
-            println!("active = {:?}", active_uid);
-        }
         let mut message_mut = self.messages.write().await;
         let message_guild_mut = message_mut.get_mut(guild_id);
         let edit_success = if let Some((old_message_ref, old_points)) = message_guild_mut {

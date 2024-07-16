@@ -42,7 +42,6 @@ pub async fn update_voice_sessions(
             .iter()
             .position(|s| s.user_id == active_user_ids[0])
         {
-            println!("alone session found");
             let session = active_sessions.remove(session_index);
             ActiveSession::terminate(session, ctx, pool).await?;
         }
