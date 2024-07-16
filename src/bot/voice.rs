@@ -4,18 +4,16 @@ use serenity::{
     all::{ChannelId, Guild, VoiceState},
     prelude::TypeMap,
 };
-use tokio::sync::RwLock;
 
 use crate::{bot::sessions::ActiveSession, db_connection::DbConnection, errors::HelibotError};
 
 pub async fn update_voice_sessions(
     client_data: &TypeMap,
     channel: &ChannelId,
-    guild: Arc<RwLock<Guild>>,
+    guild: Arc<Guild>,
 ) -> Result<(), HelibotError> {
-    //let client_data = ctx.data.read().await;
     let pool = client_data.get::<DbConnection>().unwrap();
-    let guild = guild.read().await;
+    // let guild = guild.read().await;
     let voice_states_in_channel: Vec<&VoiceState> = guild
         .voice_states
         .iter()

@@ -1,15 +1,15 @@
 use serde::Deserialize;
 use serenity::{
-    all::{Context, EditRole, GuildId, Role, UserId},
+    all::{Context, EditRole, GuildId, Member, Role, UserId},
     prelude::TypeMapKey,
 };
 use sqlx::{MySql, Pool};
 use std::collections::HashMap;
-use tokio::sync::RwLock;
+use tokio::sync::{RwLock, Semaphore};
 
-use crate::errors::HelibotError;
+use crate::{db_connection::DbConnection, errors::HelibotError};
 
-use super::points::get_points_for_user;
+use super::points::{self, Point};
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Seuil {
@@ -25,6 +25,7 @@ struct RoleWithSeuil {
 pub struct RoleManager {
     seuils: Vec<Seuil>,
     roles: RwLock<HashMap<GuildId, Vec<RoleWithSeuil>>>,
+    currently_updating: HashMap<GuildId, Semaphore>,
 }
 impl TypeMapKey for RoleManager {
     type Value = RoleManager;
@@ -67,9 +68,13 @@ impl RoleManager {
                 .join(", ")
         );
 
+        let currently_updating =
+            HashMap::from_iter(guild_ids.iter().map(|gid| (gid.clone(), Semaphore::new(1))));
+
         Ok(RoleManager {
             seuils,
             roles: RwLock::new(roles),
+            currently_updating,
         })
     }
 
@@ -107,30 +112,67 @@ impl RoleManager {
         &self.seuils
     }
 
-    pub async fn check_role_for_user(
+    pub async fn check_role_for_every_user_in_guild(
         &self,
+        ctx: &Context,
+        guild_id: &GuildId,
+    ) -> Result<(), HelibotError> {
+        let permit = match self.currently_updating.get(guild_id).map(|s|s.try_acquire()){
+            Some(Ok(permit)) => permit,
+            _ =>{
+                println!("skipping role check bc another on is running");
+                return Ok(());
+            }
+        };
+        let guild = guild_id.to_partial_guild(&ctx).await?;
+        let members = guild.members(&ctx, None, None).await?;
+        let helibot_roles = self.get_roles_for_guild(ctx, guild_id).await?;
+        let guild = guild_id.to_partial_guild(&ctx).await?;
+
+        let client_data = ctx.data.read().await;
+        let pool = client_data.get::<DbConnection>().unwrap();
+
+        let points = points::get_points_for_guild(ctx, pool, guild_id).await?;
+
+        for member in members {
+            if let Some(point) = points.iter().find(|p| p.user_id == member.user.id.get()) {
+                self.check_role_for_user(ctx, &helibot_roles, &member, point)
+                    .await?;
+                println!("checked role for {} in {}", member.user.name, guild.name);
+            }
+        }
+
+        drop(permit);
+        Ok(())
+    }
+    pub async fn check_role_for_single_user(
+        &self,
+        ctx: &Context,
         pool: &Pool<MySql>,
         user_id: &UserId,
         guild_id: &GuildId,
-        ctx: &Context,
     ) -> Result<(), HelibotError> {
         let helibot_roles = self.get_roles_for_guild(ctx, guild_id).await?;
+        let guild = guild_id.to_partial_guild(&ctx).await?;
+        let member = guild.member(&ctx, user_id).await?;
+        if let Some(ref point) = points::get_points_for_user(pool, user_id, guild_id).await? {
+            self.check_role_for_user(ctx, &helibot_roles, &member, point)
+                .await?;
+        }
+        Ok(())
+    }
+    async fn check_role_for_user(
+        &self,
+        ctx: &Context,
+        helibot_roles: &[RoleWithSeuil],
+        member: &Member,
+        point: &Point,
+    ) -> Result<(), HelibotError> {
         if helibot_roles.is_empty() {
             return Ok(());
         }
-        /*let helibot_min_role = helibot_roles
-        .iter()
-        .min_by(|a, b| a.seuil.cmp(&b.seuil))
-        .unwrap();*/
-        let point = match get_points_for_user(pool, user_id, guild_id).await? {
-            Some(p) => p,
-            None => return Ok(()),
-        };
 
-        //let user = user_id.to_user(ctx).await?;
-        let guild = guild_id.to_partial_guild(ctx).await?;
-        let member = guild.member(&ctx.http, user_id).await?; //using http to force refetch
-        let helibot_roles = self.get_roles_for_guild(ctx, guild_id).await?;
+
 
         let roles_user: Vec<&RoleWithSeuil> = member
             .roles
@@ -145,7 +187,7 @@ impl RoleManager {
         let computed_role = helibot_roles
             .iter()
             .reduce(|acc, role| {
-                if point.points >= role.seuil {
+                if point.points >= role.seuil * 60 {
                     role
                 } else {
                     acc

@@ -1,80 +1,82 @@
-use crate::{bot::points::Point, errors::HelibotError};
+use crate::{db_connection::DbConnection, errors::HelibotError};
 
 use serenity::{
-    all::{Context, GuildId, Member, UserId},
+    all::{Context, GuildId, UserId},
     prelude::TypeMapKey,
 };
-use sqlx::{MySql, Pool};
 use std::collections::HashMap;
+use tokio::sync::Semaphore;
 
-type UniqueUser = (GuildId, UserId);
-
-#[derive(Default)]
 pub struct UsernameManager {
-    usernames_cached: HashMap<UniqueUser, String>,
+    currently_updating: HashMap<GuildId, Semaphore>,
 }
 impl TypeMapKey for UsernameManager {
     type Value = UsernameManager;
 }
 
 impl UsernameManager {
-    pub async fn create(
-        pool: &Pool<MySql>,
-        ctx: &Context,
-    ) -> Result<UsernameManager, HelibotError> {
-        let points = sqlx::query_as!(Point, "SELECT * from Points")
-            .fetch_all(pool)
-            .await?;
-        let mut valid_users: HashMap<UniqueUser, String> = HashMap::new();
+    pub fn new(guilds: &Vec<GuildId>) -> Self {
+        let currently_updating =
+            HashMap::from_iter(guilds.iter().map(|g| (g.clone(), Semaphore::new(1))));
+        UsernameManager { currently_updating }
+    }
 
+    pub async fn refresh_usernames(
+        &self,
+        ctx: &Context,
+        guild_id: &GuildId,
+    ) -> Result<(), HelibotError> {
+        let permit = match self
+            .currently_updating
+            .get(guild_id)
+            .map(|s| s.try_acquire())
+        {
+            Some(Ok(permit)) => permit,
+            _ => {
+                println!(
+                    "skipping name update bc another one is running for guild {}<{}>",
+                    guild_id.name(&ctx).unwrap_or("undef".into()),
+                    guild_id.get()
+                );
+                return Ok(());
+            }
+        };
+        let thread_client_data = ctx.data.clone();
+        let thread_client_data = thread_client_data.read().await;
+        let pool = thread_client_data.get::<DbConnection>().unwrap();
+        let points = super::points::get_points_for_guild(ctx, pool, guild_id).await?;
+        let members = guild_id.members(&ctx, None, None).await?;
         for point in points {
-            let guild_id = GuildId::new(point.guild_id);
-            match UserId::new(point.user_id).to_user(ctx).await {
-                Ok(user) => {
-                    let username = user.nick_in(ctx, guild_id).await.unwrap_or(user.name);
-                    println!("adding user {username} to username manager");
-                    valid_users.insert((guild_id, user.id), username);
-                }
-                Err(e) => {
-                    eprintln!(
-                        "could not fetch user {} in guild {}. user is in db but not discord guild. Err = {}",
-                        point.user_id, point.guild_id, e
-                    );
-                    eprintln!("deleting it ...");
-                    sqlx::query!(
-                        "DELETE FROM Points WHERE user_id = ? AND guild_id = ?",
-                        point.user_id,
-                        point.guild_id
-                    )
-                    .execute(pool)
-                    .await?;
-                }
+            let debug = point.username.starts_with("deleted_user_");
+            let mut username: String;
+            if let Some(member) = members.iter().find(|m| m.user.id == point.user_id) {
+                username = member.nick.clone().unwrap_or(member.user.name.clone());
+            } else {
+                let user = UserId::new(point.user_id).to_user(&ctx).await?;
+                username = user.name;
+            }
+            if username.starts_with("deleted_user_") && !point.username.ends_with(" (deleted user)")
+            {
+                username = point.username.clone() + " (deleted user)";
+            }
+            if username != point.username && !username.starts_with("deleted_user_") {
+                sqlx::query!(
+                    "UPDATE Points SET username=? WHERE user_id=? AND guild_id=?",
+                    username,
+                    point.user_id,
+                    point.guild_id
+                )
+                .execute(pool)
+                .await?;
+                println!(
+                    "updated username from {} to {} in points",
+                    point.username, username
+                );
+            } else if debug {
+                println!("no username change for {username}");
             }
         }
-        Ok(UsernameManager {
-            usernames_cached: valid_users,
-        })
-    }
-
-    pub fn add_user(&mut self, member: Member) {
-        self.usernames_cached.insert(
-            (member.guild_id, member.user.id),
-            member.nick.unwrap_or(member.user.name),
-        );
-    }
-
-    pub fn add_user_if_not_in_cache(&mut self, member: &Member) {
-        if self
-            .get_username_from_cache(member.guild_id, member.user.id)
-            .is_none()
-        {
-            self.add_user(member.clone());
-        }
-    }
-
-    pub fn get_username_from_cache(&self, guild_id: GuildId, user_id: UserId) -> Option<&str> {
-        self.usernames_cached
-            .get(&(guild_id, user_id))
-            .map(|res| res.as_str())
+        drop(permit);
+        Ok(())
     }
 }

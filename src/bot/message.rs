@@ -2,7 +2,6 @@ use crate::{
     bot::{
         points::{self, Point},
         roles::RoleManager,
-        usernames::UsernameManager,
     },
     db_connection::DbConnection,
     errors::HelibotError,
@@ -81,33 +80,30 @@ impl MessagesManager {
         ctx: &Context,
         client_data: &TypeMap,
         guild_id: &GuildId,
-    ) {
+    ) -> Result<(), HelibotError> {
         let pool = client_data.get::<DbConnection>().unwrap();
-        let username_manager = client_data.get::<UsernameManager>().unwrap();
         let role_manager = client_data.get::<RoleManager>().unwrap();
-        let channel_id = match self.channel_ids.get(guild_id) {
-            Some(channel_id) => channel_id,
-            None => {
-                eprintln!("points channel not found in guild {}", guild_id);
-                return;
-            }
-        };
+        let channel_id = self
+            .channel_ids
+            .get(guild_id)
+            .ok_or(HelibotError::PointChannelNotFound(guild_id.get()))?;
 
-        let points = match points::get_points_for_guild(pool, guild_id).await {
-            Ok(points) => points,
-            Err(e) => {
-                eprintln!("could not get points for guild {} : {e:?}", e);
-                return;
-            }
-        };
+        let members_in_guild: Vec<_> = guild_id
+            .members(&ctx, None, None)
+            .await?
+            .iter()
+            .map(|m| m.user.id.get())
+            .collect();
+        // points = points.into_iter().filter(|p|members_in_guild.contains(&p.user_id)).collect();
+        let points = points::get_points_for_guild(ctx, pool, guild_id)
+            .await?
+            .into_iter()
+            .filter(|p| members_in_guild.contains(&p.user_id))
+            .collect();
 
-        let embed = create_embed(
-            points::parse_to_tuple(username_manager, &points),
-            role_manager.get_seuils(),
-        );
+        let embed = create_embed(points::parse_to_tuple(&points), role_manager.get_seuils());
         let mut message_mut = self.messages.write().await;
         let message_guild_mut = message_mut.get_mut(guild_id);
-        //message_guild_mut.get_mut(guild_id);
         let edit_success = if let Some((old_message_ref, old_points)) = message_guild_mut {
             if old_points != &points {
                 let edit = try_edit_old_points_message(ctx, &embed, old_message_ref).await;
@@ -120,33 +116,35 @@ impl MessagesManager {
             false
         };
         if !edit_success {
-            match send_new_msg(ctx, channel_id, embed).await {
-                Ok(new_msg) => {
-                    if let Some(old_message_points) = message_guild_mut {
-                        *old_message_points = (new_msg, points);
-                    } else {
-                        message_mut.insert(guild_id.to_owned(), (new_msg, points));
-                    }
-                    println!(
-                        "point message created in guild {}<{}>",
-                        guild_id.name(ctx).unwrap_or("".into()),
-                        guild_id.get()
-                    );
-                }
-                Err(e) => eprintln!(
-                    "could not send new msg in channel {} in guild {} : {e:?}",
-                    channel_id.get(),
-                    guild_id.get()
-                ),
+            let new_msg = send_new_msg(ctx, channel_id, embed).await?;
+
+            if let Some(old_message_points) = message_guild_mut {
+                *old_message_points = (new_msg, points);
+            } else {
+                message_mut.insert(guild_id.to_owned(), (new_msg, points));
             }
+            println!(
+                "point message created in guild {}<{}>",
+                guild_id.name(ctx).unwrap_or("".into()),
+                guild_id.get()
+            );
         }
+        Ok(())
     }
 
     pub async fn print_points_in_all_guilds(&self, ctx: &Context, guild_ids: &Vec<GuildId>) {
         let client_data = ctx.data.read().await;
         for guild_id in guild_ids {
-            self.print_points_in_guild(ctx, &client_data, guild_id)
-                .await;
+            if let Err(e) = self
+                .print_points_in_guild(ctx, &client_data, guild_id)
+                .await
+            {
+                eprintln!(
+                    "could not send score msg in guild {}<{}> : {e:?}",
+                    guild_id.name(ctx).unwrap_or("undef".into()),
+                    guild_id.get()
+                )
+            }
         }
     }
 }

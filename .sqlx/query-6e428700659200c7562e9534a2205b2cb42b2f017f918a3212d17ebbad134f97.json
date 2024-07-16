@@ -52,6 +52,16 @@
           "char_set": 63,
           "max_size": 10
         }
+      },
+      {
+        "ordinal": 5,
+        "name": "username",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "char_set": 224,
+          "max_size": 1020
+        }
       }
     ],
     "parameters": {
@@ -62,7 +72,8 @@
       false,
       false,
       false,
-      true
+      true,
+      false
     ]
   },
   "hash": "6e428700659200c7562e9534a2205b2cb42b2f017f918a3212d17ebbad134f97"

@@ -1,12 +1,8 @@
-use crate::{
-    bot::{sessions::ActiveSession, usernames::UsernameManager},
-    db_connection::DbConnection,
-    errors::HelibotError,
-};
+use crate::{bot::sessions::ActiveSession, db_connection::DbConnection, errors::HelibotError};
 
 use serenity::all::{Context, GuildId, UserId};
 use sqlx::{types::time::OffsetDateTime, MySql, Pool};
-use std::collections::HashSet;
+use std::{collections::HashSet, iter::once};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Point {
@@ -14,7 +10,8 @@ pub struct Point {
     pub points: u32,
     pub guild_id: u64,
     pub user_id: u64,
-    pub score_historique: Option<u32>
+    pub username: String,
+    pub score_historique: Option<u32>,
 }
 
 pub async fn add_points(
@@ -66,6 +63,7 @@ pub async fn add_points(
 }
 
 pub async fn get_points_for_guild(
+    ctx: &Context,
     pool: &Pool<MySql>,
     guild_id: &GuildId,
 ) -> Result<HashSet<Point>, HelibotError> {
@@ -85,7 +83,7 @@ pub async fn get_points_for_guild(
     } else {
         0
     };
-    active_sessions.iter().for_each(|active_session| {
+    for active_session in active_sessions {
         match points
             .iter_mut()
             .find(|point| point.user_id == active_session.user_id)
@@ -95,10 +93,19 @@ pub async fn get_points_for_guild(
             }
             None => {
                 println!("manually adding points instance for user {} bc Points row does not exist yet value = {}", active_session.user_id, to_add);
-                points.push(Point { id: 0, points: to_add, score_historique: None, guild_id: active_session.guild_id, user_id: active_session.user_id })
+                let user = UserId::new(active_session.user_id).to_user(&ctx).await?;
+                let username = user.nick_in(&ctx, guild_id).await.unwrap_or(user.name);
+                points.push(Point {
+                    id: 0,
+                    points: to_add,
+                    score_historique: None,
+                    guild_id: active_session.guild_id,
+                    user_id: active_session.user_id,
+                    username,
+                })
             }
         }
-    });
+    }
 
     Ok(HashSet::from_iter(points.into_iter()))
 }
@@ -128,21 +135,17 @@ pub async fn get_points_for_user(
 
 type Username = String;
 
-pub fn parse_to_tuple(
-    username_manager: &UsernameManager,
-    points: &HashSet<Point>,
-) -> Vec<(Username, String)> {
+pub fn parse_to_tuple(points: &HashSet<Point>) -> Vec<(Username, String)> {
     let mut points: Vec<&Point> = points.iter().collect();
     points.sort_by(|a, b| b.points.cmp(&a.points));
     points
         .iter()
-        .filter_map(|point| {
-            username_manager
-                .get_username_from_cache(GuildId::new(point.guild_id), UserId::new(point.user_id))
-                .map(|username| (username.to_string(), (point.points/60).to_string()))
-        })
+        .map(|point| (point.username.clone(), (point.points / 60).to_string()))
         .collect()
 }
+
+const USERNAME_HEADER: &str = "User Name";
+const POINTS_HEADER: &str = "Score";
 
 pub async fn construct_points_md_table(
     ctx: &Context,
@@ -150,40 +153,43 @@ pub async fn construct_points_md_table(
 ) -> Result<String, HelibotError> {
     let client_data = ctx.data.read().await;
     let pool = client_data.get::<DbConnection>().unwrap();
-    let username_manager = client_data.get::<UsernameManager>().unwrap();
-    let points = get_points_for_guild(pool, guild_id).await?;
-    let mut points_fmt = parse_to_tuple(username_manager, &points);
-    points_fmt.insert(0, ("User Name".into(), "Score".into()));
+    let points = get_points_for_guild(ctx, pool, guild_id).await?;
+    let points_fmt = parse_to_tuple(&points);
     let longest_username_size = points_fmt
         .iter()
         .map(|(username, _)| username.len())
+        .chain(once(USERNAME_HEADER.len()))
         .max()
         .unwrap_or(0)
-        + 2;
+        + 1;
     let longest_points_size = points_fmt
         .iter()
         .map(|(_, points)| points.len())
+        .chain(once(POINTS_HEADER.len()))
         .max()
         .unwrap_or(0)
         + 2;
-    points_fmt.insert(
-        1,
-        (
-            "-".repeat(longest_username_size - 2),
-            "-".repeat(longest_points_size - 2),
-        ),
+    let mut res = format!(
+        "{}{} | {}\n",
+        POINTS_HEADER,
+        " ".repeat(longest_points_size - POINTS_HEADER.len()),
+        USERNAME_HEADER
     );
+    res += format!(
+        "{}|{}\n",
+        "-".repeat(longest_points_size + 1),
+        "-".repeat(longest_username_size)
+    )
+    .as_str();
 
-    Ok(points_fmt
+    res += points_fmt
         .iter()
         .map(|(username, points)| {
-            format!(
-                "|{:username_width$}|{:points_width$}|\n",
-                format!(" {} ", username),
-                format!(" {} ", points),
-                username_width = longest_username_size,
-                points_width = longest_points_size
-            )
+            let padding_points = " ".repeat(longest_points_size - points.len());
+            format!("{}{} | {}\n", points, padding_points, username,)
         })
-        .fold("".to_owned(), |accumulator, current| accumulator + &current))
+        .fold("".to_owned(), |accumulator, current| accumulator + &current)
+        .as_str();
+    Ok(res)
 }
+
