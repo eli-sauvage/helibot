@@ -1,13 +1,14 @@
 use std::sync::Arc;
 
 use serenity::{
-    all::{ChannelId, Guild, VoiceState},
+    all::{ChannelId, Context, Guild, VoiceState},
     prelude::TypeMap,
 };
 
 use crate::{bot::sessions::ActiveSession, db_connection::DbConnection, errors::HelibotError};
 
 pub async fn update_voice_sessions(
+    ctx: &Context,
     client_data: &TypeMap,
     channel: &ChannelId,
     guild: Arc<Guild>,
@@ -43,7 +44,7 @@ pub async fn update_voice_sessions(
         {
             println!("alone session found");
             let session = active_sessions.remove(session_index);
-            ActiveSession::terminate(session, pool).await?;
+            ActiveSession::terminate(session, ctx, pool).await?;
         }
     } else {
         for active_user_id_without_session in active_user_ids
@@ -66,7 +67,7 @@ pub async fn update_voice_sessions(
 
     for session_index_to_terminate in sessions_index_to_terminate {
         let session = active_sessions.remove(session_index_to_terminate);
-        session.terminate(pool).await?;
+        session.terminate(ctx, pool).await?;
     }
     Ok(())
 }

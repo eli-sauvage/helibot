@@ -1,3 +1,2 @@
-add guild roles when bot joins a new guild
+add guild roles when bot joins a new guild -> cmd
 poll cmd
-paralelize username manager init ? 

@@ -15,35 +15,40 @@ pub struct Point {
 }
 
 pub async fn add_points(
+    ctx: &Context,
     pool: &Pool<MySql>,
-    user_id: u64,
-    guild_id: u64,
+    user_id: &UserId,
+    guild_id: &GuildId,
     points_to_add: i64,
 ) -> Result<u32, HelibotError> {
     let current_point = match sqlx::query_as!(
         Point,
         "SELECT * FROM Points WHERE user_id = ? AND guild_id = ?",
-        user_id,
-        guild_id
+        user_id.get(),
+        guild_id.get()
     )
     .fetch_optional(pool)
     .await?
     {
         Some(id) => id,
         None => {
+            let user = user_id.to_user(&ctx).await?;
+            let username = user.nick_in(ctx, guild_id).await.unwrap_or(user.name);
+
             sqlx::query!(
-                "INSERT INTO Points (user_id, guild_id, points) VALUES (?, ?, ?)",
-                user_id,
-                guild_id,
-                0
+                "INSERT INTO Points (user_id, guild_id, points, username) VALUES (?, ?, ?, ?)",
+                user_id.get(),
+                guild_id.get(),
+                0,
+                username
             )
             .execute(pool)
             .await?;
             sqlx::query_as!(
                 Point,
                 "SELECT * FROM Points WHERE user_id = ? AND guild_id = ?",
-                user_id,
-                guild_id
+                user_id.get(),
+                guild_id.get()
             )
             .fetch_one(pool)
             .await?
@@ -135,12 +140,21 @@ pub async fn get_points_for_user(
 
 type Username = String;
 
-pub fn parse_to_tuple(points: &HashSet<Point>) -> Vec<(Username, String)> {
+pub fn parse_to_tuple(
+    points: &HashSet<Point>,
+    active_uid: &[u64],
+) -> Vec<(Username, String, bool)> {
     let mut points: Vec<&Point> = points.iter().collect();
     points.sort_by(|a, b| b.points.cmp(&a.points));
     points
         .iter()
-        .map(|point| (point.username.clone(), (point.points / 60).to_string()))
+        .map(|point| {
+            (
+                point.username.clone(),
+                (point.points / 60).to_string(),
+                active_uid.contains(&point.user_id),
+            )
+        })
         .collect()
 }
 
@@ -154,7 +168,10 @@ pub async fn construct_points_md_table(
     let client_data = ctx.data.read().await;
     let pool = client_data.get::<DbConnection>().unwrap();
     let points = get_points_for_guild(ctx, pool, guild_id).await?;
-    let points_fmt = parse_to_tuple(&points);
+    let points_fmt: Vec<(String, String)> = parse_to_tuple(&points, &Vec::<u64>::new())
+        .into_iter()
+        .map(|t| (t.0, t.1))
+        .collect();
     let longest_username_size = points_fmt
         .iter()
         .map(|(username, _)| username.len())
@@ -164,7 +181,7 @@ pub async fn construct_points_md_table(
         + 1;
     let longest_points_size = points_fmt
         .iter()
-        .map(|(_, points)| points.len())
+        .map(|(_, points)| points.to_string().len())
         .chain(once(POINTS_HEADER.len()))
         .max()
         .unwrap_or(0)
@@ -185,7 +202,7 @@ pub async fn construct_points_md_table(
     res += points_fmt
         .iter()
         .map(|(username, points)| {
-            let padding_points = " ".repeat(longest_points_size - points.len());
+            let padding_points = " ".repeat(longest_points_size - points.to_string().len());
             format!("{}{} | {}\n", points, padding_points, username,)
         })
         .fold("".to_owned(), |accumulator, current| accumulator + &current)

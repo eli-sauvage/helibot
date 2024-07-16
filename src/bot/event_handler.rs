@@ -95,9 +95,13 @@ impl EventHandler for Handler {
                     .collect();
                 let g = Arc::new(ctx_thread.cache.clone().guild(guild_id).unwrap().clone());
                 for voice_channel in voice_channels {
-                    let r =
-                        voice::update_voice_sessions(&client_data, &voice_channel.id, g.clone())
-                            .await;
+                    let r = voice::update_voice_sessions(
+                        &ctx_thread,
+                        &client_data,
+                        &voice_channel.id,
+                        g.clone(),
+                    )
+                    .await;
                     if let Err(e) = r {
                         eprintln!("could not update voice session on bot startup, guild = {} channel = {}: {e:?}", guild_id, voice_channel.id);
                     }
@@ -174,7 +178,7 @@ impl EventHandler for Handler {
         );
         let client_data = ctx.data.read().await;
         if let Some(old_channel) = &old_state.as_ref().and_then(|os| os.channel_id) {
-            let r = voice::update_voice_sessions(&client_data, old_channel, g.clone()).await;
+            let r = voice::update_voice_sessions(&ctx, &client_data, old_channel, g.clone()).await;
             if let Err(e) = r {
                 eprintln!(
                     "could not update channel {} in guild {:?} : {e:?}",
@@ -184,7 +188,7 @@ impl EventHandler for Handler {
             }
         }
         if let Some(new_channel) = new_state.channel_id {
-            let r = voice::update_voice_sessions(&client_data, &new_channel, g.clone()).await;
+            let r = voice::update_voice_sessions(&ctx, &client_data, &new_channel, g.clone()).await;
             if let Err(e) = r {
                 eprintln!(
                     "could not update channel {} in guild {:?} : {e:?}",

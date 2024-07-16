@@ -15,9 +15,9 @@ impl TypeMapKey for UsernameManager {
 }
 
 impl UsernameManager {
-    pub fn new(guilds: &Vec<GuildId>) -> Self {
+    pub fn new(guilds: &[GuildId]) -> Self {
         let currently_updating =
-            HashMap::from_iter(guilds.iter().map(|g| (g.clone(), Semaphore::new(1))));
+            HashMap::from_iter(guilds.iter().map(|g| (g.to_owned(), Semaphore::new(1))));
         UsernameManager { currently_updating }
     }
 
@@ -35,7 +35,7 @@ impl UsernameManager {
             _ => {
                 println!(
                     "skipping name update bc another one is running for guild {}<{}>",
-                    guild_id.name(&ctx).unwrap_or("undef".into()),
+                    guild_id.name(ctx).unwrap_or("undef".into()),
                     guild_id.get()
                 );
                 return Ok(());

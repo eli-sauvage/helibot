@@ -68,8 +68,11 @@ impl RoleManager {
                 .join(", ")
         );
 
-        let currently_updating =
-            HashMap::from_iter(guild_ids.iter().map(|gid| (gid.clone(), Semaphore::new(1))));
+        let currently_updating = HashMap::from_iter(
+            guild_ids
+                .iter()
+                .map(|gid| (gid.to_owned(), Semaphore::new(1))),
+        );
 
         Ok(RoleManager {
             seuils,

@@ -18,7 +18,7 @@ use serenity::{
 use std::collections::{HashMap, HashSet};
 use tokio::sync::RwLock;
 
-use super::roles::Seuil;
+use super::{roles::Seuil, sessions::ActiveSession};
 
 #[derive(Default)]
 pub struct MessagesManager {
@@ -101,7 +101,25 @@ impl MessagesManager {
             .filter(|p| members_in_guild.contains(&p.user_id))
             .collect();
 
-        let embed = create_embed(points::parse_to_tuple(&points), role_manager.get_seuils());
+        let active_uid: Vec<u64> =
+            ActiveSession::get_all_active_sessions_for_guild(pool, guild_id.get())
+                .await
+                .unwrap_or_default()
+                .iter()
+                .map(|session| session.user_id)
+                .collect();
+
+        let embed = create_embed(
+            points::parse_to_tuple(&points, &active_uid),
+            role_manager.get_seuils(),
+        );
+        if guild_id.get() == 544953131205918720 {
+            println!(
+                "computed = {:?}",
+                points::parse_to_tuple(&points, &active_uid)
+            );
+            println!("active = {:?}", active_uid);
+        }
         let mut message_mut = self.messages.write().await;
         let message_guild_mut = message_mut.get_mut(guild_id);
         let edit_success = if let Some((old_message_ref, old_points)) = message_guild_mut {
@@ -176,11 +194,18 @@ async fn send_new_msg(
         .map_err(HelibotError::SerenityError)
 }
 
-fn create_embed(mut points: Vec<(String, String)>, roles: &[Seuil]) -> CreateEmbed {
-    points = points
+fn create_embed(points: Vec<(String, String, bool)>, roles: &[Seuil]) -> CreateEmbed {
+    let mut points: Vec<(String, String)> = points
         .iter()
         .enumerate()
-        .map(|(index, val)| (format!("#{} {}", index + 1, val.0), val.1.to_owned()))
+        .map(|(index, val)| {
+            if val.2 {
+                //connected
+                (format!("#{} __{}__", index + 1, val.0), val.1.to_owned())
+            } else {
+                (format!("#{} {}", index + 1, val.0), val.1.to_owned())
+            }
+        })
         .collect();
     points.shrink_to(15);
 

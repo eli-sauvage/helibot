@@ -1,7 +1,7 @@
 use crate::{bot::points, errors::HelibotError};
 
 use serenity::{
-    all::{ChannelType, Context, Member, Ready},
+    all::{ChannelType, Context, GuildId, Member, Ready, UserId},
     futures::future,
 };
 use sqlx::{types::time::OffsetDateTime, MySql, Pool};
@@ -15,7 +15,7 @@ pub struct ActiveSession {
 }
 
 impl ActiveSession {
-    pub async fn terminate(self, pool: &Pool<MySql>) -> Result<(), HelibotError> {
+    pub async fn terminate(self, ctx: &Context, pool: &Pool<MySql>) -> Result<(), HelibotError> {
         let now = sqlx::query!("SELECT current_timestamp")
             .fetch_one(pool)
             .await?
@@ -23,8 +23,14 @@ impl ActiveSession {
             .assume_offset(self.begin.offset());
         let points_to_add = (now - self.begin).whole_seconds();
 
-        let new_points =
-            points::add_points(pool, self.user_id, self.guild_id, points_to_add).await?;
+        let new_points = points::add_points(
+            ctx,
+            pool,
+            &UserId::new(self.user_id),
+            &GuildId::new(self.guild_id),
+            points_to_add,
+        )
+        .await?;
 
         sqlx::query!("INSERT INTO SessionHistory (user_id, guild_id, begin, end, points) VALUES(?, ?, ?, ?, ?)",
             self.user_id,
