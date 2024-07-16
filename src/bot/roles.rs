@@ -117,9 +117,13 @@ impl RoleManager {
         ctx: &Context,
         guild_id: &GuildId,
     ) -> Result<(), HelibotError> {
-        let permit = match self.currently_updating.get(guild_id).map(|s|s.try_acquire()){
+        let permit = match self
+            .currently_updating
+            .get(guild_id)
+            .map(|s| s.try_acquire())
+        {
             Some(Ok(permit)) => permit,
-            _ =>{
+            _ => {
                 println!("skipping role check bc another on is running");
                 return Ok(());
             }
@@ -171,8 +175,6 @@ impl RoleManager {
         if helibot_roles.is_empty() {
             return Ok(());
         }
-
-
 
         let roles_user: Vec<&RoleWithSeuil> = member
             .roles

@@ -192,4 +192,3 @@ pub async fn construct_points_md_table(
         .as_str();
     Ok(res)
 }
-

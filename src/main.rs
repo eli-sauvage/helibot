@@ -13,7 +13,6 @@ use serenity::{all::GatewayIntents, Client};
 //#[tokio::main]
 #[tokio::main(flavor = "multi_thread", worker_threads = 10)]
 async fn main() -> Result<(), errors::HelibotError> {
-
     let env = Env::get_env()?;
     let pool = db_connection::setup_db_and_migrate(&env).await?;
 
