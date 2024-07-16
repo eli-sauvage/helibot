@@ -4,3 +4,6 @@ compose.override.yml
 # Added by cargo
 
 /target
+
+#because this is a binary
+Cargo.lock
