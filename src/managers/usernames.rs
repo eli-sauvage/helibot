@@ -1,5 +1,5 @@
+use crate::models::points;
 use crate::{db_connection::DbConnection, errors::HelibotError};
-
 use serenity::{
     all::{Context, GuildId, UserId},
     prelude::TypeMapKey,
@@ -44,7 +44,7 @@ impl UsernameManager {
         let thread_client_data = ctx.data.clone();
         let thread_client_data = thread_client_data.read().await;
         let pool = thread_client_data.get::<DbConnection>().unwrap();
-        let points = super::points::get_points_for_guild(ctx, pool, guild_id).await?;
+        let points = points::get_points_for_guild(ctx, pool, guild_id).await?;
         let members = guild_id.members(&ctx, None, None).await?;
         for point in points {
             let debug = point.username.starts_with("deleted_user_");

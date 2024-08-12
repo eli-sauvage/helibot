@@ -9,7 +9,7 @@ use tokio::sync::{RwLock, Semaphore};
 
 use crate::{db_connection::DbConnection, errors::HelibotError};
 
-use super::points::{self, Point};
+use crate::models::points::{self, Point};
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Seuil {
@@ -32,15 +32,21 @@ impl TypeMapKey for RoleManager {
 }
 
 impl RoleManager {
-    pub async fn new(
-        ctx: &Context,
-        guild_ids: &Vec<GuildId>,
-        seuils: Vec<Seuil>,
-    ) -> Result<Self, HelibotError> {
+    pub async fn new(ctx: &Context, guild_ids: &Vec<GuildId>, seuils: Vec<Seuil>) -> Self {
         let mut roles: HashMap<GuildId, Vec<RoleWithSeuil>> = HashMap::new();
 
         for guild_id in guild_ids {
-            let guild = guild_id.to_partial_guild(ctx).await?;
+            let guild = match guild_id.to_partial_guild(ctx).await {
+                Ok(guild) => guild,
+                Err(err) => {
+                    eprintln!(
+                        "could not find guild {}, roles won't be updated for this guild : {err:?}",
+                        guild_id
+                    );
+                    roles.insert(guild_id.to_owned(), vec![]);
+                    continue;
+                }
+            };
             let mut roles_for_guild: Vec<RoleWithSeuil> = vec![];
             for seuil in &seuils {
                 if let Some(r) = guild.role_by_name(&seuil.role_name) {
@@ -50,17 +56,31 @@ impl RoleManager {
                     });
                 } else {
                     let r = EditRole::new().name(seuil.role_name.to_owned());
-                    roles_for_guild.push(RoleWithSeuil {
-                        role: guild.create_role(ctx, r).await?,
-                        seuil: seuil.seuil,
-                    });
+                    match guild.create_role(ctx, r).await {
+                        Ok(new_role) => {
+                            println!(
+                                "created new role {} for guild {}<{}>",
+                                seuil.role_name, guild.name, guild_id
+                            );
+                            roles_for_guild.push(RoleWithSeuil {
+                                role: new_role,
+                                seuil: seuil.seuil,
+                            });
+                        }
+                        Err(err) => {
+                            eprintln!(
+                                "could not create new role {} for guild {}<{}> : {err:?}",
+                                seuil.role_name, guild.name, guild_id
+                            );
+                        }
+                    }
                 }
             }
             roles.insert(guild_id.to_owned(), roles_for_guild);
         }
 
         println!(
-            "instanciate role w/ seuils : {}",
+            "\t instanciate role w/ seuils : {}",
             seuils
                 .iter()
                 .map(|s| format!("{}:{}", s.role_name, s.seuil))
@@ -74,11 +94,11 @@ impl RoleManager {
                 .map(|gid| (gid.to_owned(), Semaphore::new(1))),
         );
 
-        Ok(RoleManager {
+        RoleManager {
             seuils,
             roles: RwLock::new(roles),
             currently_updating,
-        })
+        }
     }
 
     async fn get_roles_for_guild(

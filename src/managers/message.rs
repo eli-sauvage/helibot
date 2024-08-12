@@ -1,10 +1,11 @@
 use crate::{
-    bot::{
-        points::{self, Point},
-        roles::RoleManager,
-    },
     db_connection::DbConnection,
     errors::HelibotError,
+    managers::roles::{RoleManager, Seuil},
+    models::{
+        points::{self, Point},
+        sessions::ActiveSession,
+    },
 };
 
 use serenity::{
@@ -18,8 +19,6 @@ use serenity::{
 use std::collections::{HashMap, HashSet};
 use tokio::sync::RwLock;
 
-use super::{roles::Seuil, sessions::ActiveSession};
-
 #[derive(Default)]
 pub struct MessagesManager {
     channel_ids: HashMap<GuildId, ChannelId>,
@@ -30,11 +29,7 @@ impl TypeMapKey for MessagesManager {
 }
 
 impl MessagesManager {
-    pub async fn new(
-        ctx: &Context,
-        ready_state: &Ready,
-        channel_name: &str,
-    ) -> Result<MessagesManager, HelibotError> {
+    pub async fn new(ctx: &Context, ready_state: &Ready, channel_name: &str) -> MessagesManager {
         let guild_channels_future_iter =
             ready_state
                 .guilds
@@ -58,7 +53,7 @@ impl MessagesManager {
             .filter(|channel| channel.is_err())
             .for_each(|error| {
                 eprintln!(
-                    "error while getting points channel in one guild : {:?}",
+                    "during creation of message manager : error while getting points channel in one guild ; skippping guild, points won't be printed : {:?}",
                     error
                 )
             });
@@ -66,13 +61,22 @@ impl MessagesManager {
         let channel_ids: HashMap<GuildId, ChannelId> = channels
             .into_iter()
             .flatten()
-            .map(|guild_channel| (guild_channel.guild_id, guild_channel.id))
+            .map(|guild_channel| {
+                println!(
+                    "\t found channel {}<{}> in guild {}<{}>",
+                    guild_channel.name,
+                    guild_channel.id,
+                    guild_channel.guild_id.name(ctx).unwrap_or_default(),
+                    guild_channel.guild_id
+                );
+                (guild_channel.guild_id, guild_channel.id)
+            })
             .collect();
 
-        Ok(MessagesManager {
+        MessagesManager {
             channel_ids,
             messages: RwLock::new(HashMap::new()),
-        })
+        }
     }
 
     pub async fn print_points_in_guild(

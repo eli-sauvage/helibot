@@ -8,6 +8,8 @@ pub enum HelibotError {
     Migrate(#[from] sqlx::migrate::MigrateError),
     #[error(transparent)]
     EnvVarError(EnvVarError),
+    #[error("guild {0} not found in cache")]
+    GuildNotFoundInCache(u64),
     #[error("points channel not found in guild {0}")]
     PointChannelNotFound(u64),
     #[error(transparent)]

@@ -1,4 +1,4 @@
-use crate::{bot::points, errors::HelibotError};
+use crate::{errors::HelibotError, models::points};
 
 use serenity::{
     all::{ChannelType, Context, GuildId, Member, Ready, UserId},
@@ -40,6 +40,7 @@ impl ActiveSession {
             new_points
         ).execute(pool).await?;
 
+        println!("deleting...");
         sqlx::query!("DELETE FROM ActiveSessions WHERE id = ?", self.id)
             .execute(pool)
             .await?;
@@ -109,7 +110,7 @@ impl ActiveSession {
         pool: &Pool<MySql>,
         ctx: &Context,
         ready: &Ready,
-    ) -> Result<(), HelibotError> {
+    ) {
         for guild in &ready.guilds {
             let mut connected_members: Vec<Member> = vec![];
             if let Ok(channels) = guild.id.channels(ctx).await {
@@ -124,23 +125,22 @@ impl ActiveSession {
                     .for_each(|conneted_member| connected_members.push(conneted_member));
             }
             let queries = connected_members.iter().map(|member|async move {
-                println!("connected user {}", member.user.name);
-                let res = sqlx::query!(
+                match sqlx::query!(
                     "INSERT INTO ActiveSessions (user_id, guild_id, begin) VALUES (?, ?, CURRENT_TIMESTAMP)",
                     member.user.id.get(),
                     guild.id.get()
-                ).execute(pool).await;
-                if let Err(err) = res{
-                    eprintln!("could not add active session for user {} on startup : {err:?}", member.user.id.get())
-                }
+                ).execute(pool).await{
+                    Ok(_)=>println!("connected user {} : created session", member.user.name),
+                    Err(err)=> eprintln!("could not add active session for user {} on startup : {err:?}", member.user.id.get())
+                };
             });
             future::join_all(queries).await;
+            // panic!("");
         }
-        Ok(())
     }
 }
 
-pub async fn detect_and_remove_dangling_sessions(pool: &Pool<MySql>) -> Result<(), HelibotError> {
+pub async fn detect_and_remove_old_sessions(pool: &Pool<MySql>) -> Result<(), HelibotError> {
     sqlx::query!("DELETE FROM ActiveSessions")
         .execute(pool)
         .await?;

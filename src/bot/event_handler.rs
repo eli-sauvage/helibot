@@ -1,20 +1,21 @@
 use crate::{
-    bot::{message::MessagesManager, points, roles::RoleManager, sessions::ActiveSession, voice},
+    bot::voice::{self, UpdateSessionsForAllChannels},
     db_connection::DbConnection,
+    managers::{message::MessagesManager, roles::RoleManager, usernames::UsernameManager},
+    models::{points, sessions::ActiveSession},
     Env,
 };
 
 use serenity::{
     all::{
-        ChannelType, Context, CreateAttachment, CreateInteractionResponseMessage, EventHandler,
-        GuildId, Interaction, Ready, UserId, VoiceState,
+        ChannelType, Context, CreateAttachment, CreateInteractionResponseMessage, EventHandler, Guild, GuildId, Interaction, Ready, UserId, VoiceState
     },
     async_trait,
 };
 use std::{sync::Arc, time::Duration};
 use tokio::time::interval;
 
-use super::usernames::UsernameManager;
+use super::voice::UpdateVoiceSessions;
 
 pub struct Handler;
 
@@ -22,111 +23,38 @@ pub struct Handler;
 impl EventHandler for Handler {
     async fn ready(&self, ctx: Context, ready: Ready) {
         println!("helibot is online");
-        let mut client_data = ctx.data.write().await;
+        let state = ctx.data.read().await;
 
-        let pool = client_data.get::<DbConnection>().unwrap();
-        let guild_ids: Vec<_> = ready.guilds.iter().map(|guild| guild.id).collect();
+        let pool = state.get::<DbConnection>().unwrap();
+        let guild_ids: Vec<GuildId> = ready.guilds.iter().map(|guild| guild.id).collect();
 
-        let current_sessions_res =
-            ActiveSession::add_current_sessions_to_db_on_startup(pool, &ctx, &ready).await;
-        if let Err(err) = current_sessions_res {
-            println!("could not instanciate active sessions on startup: {err:?}");
-        }
-        println!("added current sessions to db");
+        print!("adding current sessions to db ...");
+        ActiveSession::add_current_sessions_to_db_on_startup(pool, &ctx, &ready).await;
+        println!("done\n");
 
-        let message_builder = match MessagesManager::new(
+        println!("instanciating messages manager ...");
+        let messages_manager = MessagesManager::new(
             &ctx,
             &ready,
-            &client_data.get::<Env>().unwrap().point_channel_name,
+            &state.get::<Env>().unwrap().point_channel_name,
         )
-        .await
-        {
-            Ok(builder) => builder,
-            Err(e) => {
-                panic!("could not create new message builder : {e}");
-            }
-        };
-        println!("message builder instanciated");
+        .await;
+        println!("done\n");
 
-        let roles_manager = match RoleManager::new(
-            &ctx,
-            &guild_ids,
-            client_data.get::<Env>().unwrap().roles.clone(),
-        )
-        .await
-        {
-            Ok(rm) => rm,
-            Err(e) => {
-                panic!("could not instantiate role manager : {e:?}");
-            }
-        };
-        println!("roles manager instanciated");
+        println!("instanciating roles manager...");
+        let roles_manager =
+            RoleManager::new(&ctx, &guild_ids, state.get::<Env>().unwrap().roles.clone()).await;
 
         let username_manager = UsernameManager::new(&guild_ids);
 
-        println!(
-            "helibot present in guilds {}",
-            guild_ids
-                .iter()
-                .filter_map(|gid| gid.name(&ctx))
-                .collect::<Vec<_>>()
-                .join(", "),
-        );
-
-        client_data.insert::<UsernameManager>(username_manager);
-        client_data.insert::<MessagesManager>(message_builder);
-        client_data.insert::<RoleManager>(roles_manager);
-        drop(client_data);
+        drop(state);
+        let mut state_mut = ctx.data.write().await;
+        state_mut.insert::<UsernameManager>(username_manager);
+        state_mut.insert::<MessagesManager>(messages_manager);
+        state_mut.insert::<RoleManager>(roles_manager);
+        drop(state_mut);
 
         for guild_id in guild_ids.clone() {
-            let ctx_thread = ctx.clone();
-            tokio::spawn(async move {
-                let client_data = ctx_thread.data.read().await;
-                let guild = ctx_thread.cache.guild(guild_id).unwrap().clone();
-                let channels = guild.channels(&ctx_thread).await;
-                let voice_channels: Vec<_> = channels
-                    .iter()
-                    .flat_map(|channels| {
-                        channels
-                            .iter()
-                            .map(|(_, channel)| channel)
-                            .filter(|channel| channel.kind == ChannelType::Voice)
-                    })
-                    .collect();
-                let g = Arc::new(ctx_thread.cache.clone().guild(guild_id).unwrap().clone());
-                for voice_channel in voice_channels {
-                    let r = voice::update_voice_sessions(
-                        &ctx_thread,
-                        &client_data,
-                        &voice_channel.id,
-                        g.clone(),
-                    )
-                    .await;
-                    if let Err(e) = r {
-                        eprintln!("could not update voice session on bot startup, guild = {} channel = {}: {e:?}", guild_id, voice_channel.id);
-                    }
-                }
-            });
-
-            let ctx_thread = ctx.clone();
-            tokio::spawn(async move {
-                let client_data = ctx_thread.data.read().await;
-                let roles_manager = client_data.get::<RoleManager>().unwrap();
-                let _ = roles_manager
-                    .check_role_for_every_user_in_guild(&ctx_thread, &guild_id)
-                    .await;
-            });
-            let thread_ctx = ctx.clone();
-            tokio::spawn(async move {
-                let c_data = thread_ctx.data.read().await;
-                let username_manager = c_data.get::<UsernameManager>().unwrap();
-                if let Err(e) = username_manager
-                    .refresh_usernames(&thread_ctx, &guild_id)
-                    .await
-                {
-                    eprintln!("could not refresh uname : {e:?}")
-                }
-            });
         }
 
         let thread_client_data = ctx.data.clone();
@@ -145,7 +73,7 @@ impl EventHandler for Handler {
                         let active_sessions = match ActiveSession::get_all_active_sessions(pool).await {
                             Ok(act_s) => act_s,
                             Err(e) => {
-                                panic!("could not connect to db on refresh : {e:?}")
+                                panic!("could not get active sessions on refresh : {e:?}")
                             },
                         };
                         for session in active_sessions{
@@ -163,22 +91,57 @@ impl EventHandler for Handler {
         println!("ready");
     }
 
+    async fn guild_create(&self, ctx: Context, guild: Guild, _is_new: Option<bool>){
+            let ctx_thread = ctx.clone();
+            tokio::spawn(async move {
+                let state = ctx_thread.data.read().await;
+                guild
+                    .clone()
+                    .update_sessions_for_all_channels(&ctx_thread, &state)
+                    .await;
+            });
+
+            let ctx_thread = ctx.clone();
+            tokio::spawn(async move {
+                let state = ctx_thread.data.read().await;
+                let roles_manager = state.get::<RoleManager>().unwrap();
+                // let _ = roles_manager
+                //     .check_role_for_every_user_in_guild(&ctx_thread, &guild_id)
+                //     .await;
+            });
+            let ctx_thread = ctx.clone();
+            tokio::spawn(async move {
+                let state = ctx_thread.data.read().await;
+                let username_manager = state.get::<UsernameManager>().unwrap();
+                // if let Err(e) = username_manager
+                //     .refresh_usernames(&ctx_thread, &guild_id)
+                //     .await
+                // {
+                //     eprintln!("could not refresh uname : {e:?}")
+                // }
+            });
+
+    }
+
     async fn voice_state_update(
         &self,
         ctx: Context,
         old_state: Option<VoiceState>,
         new_state: VoiceState,
     ) {
-        let g = Arc::new(
-            ctx.cache
-                .clone()
-                .guild(new_state.guild_id.unwrap())
-                .unwrap()
-                .clone(),
-        );
         let client_data = ctx.data.read().await;
+        let guild_id = match new_state.guild_id {
+            Some(guild_id) => guild_id,
+            None => {
+                eprintln!("received voicestate without guild_id");
+                return;
+            }
+        };
         if let Some(old_channel) = &old_state.as_ref().and_then(|os| os.channel_id) {
-            let r = voice::update_voice_sessions(&ctx, &client_data, old_channel, g.clone()).await;
+            let r = old_channel
+                .update_sessions(&ctx, &client_data, &guild_id)
+                .await;
+            // let r = voice::update_voice_sessions(&ctx, &client_data, old_channel, g.clone()).await;
             if let Err(e) = r {
                 eprintln!(
                     "could not update channel {} in guild {:?} : {e:?}",
@@ -188,7 +151,9 @@ impl EventHandler for Handler {
             }
         }
         if let Some(new_channel) = new_state.channel_id {
-            let r = voice::update_voice_sessions(&ctx, &client_data, &new_channel, g.clone()).await;
+            let r = new_channel
+                .update_sessions(&ctx, &client_data, &guild_id)
+                .await;
             if let Err(e) = r {
                 eprintln!(
                     "could not update channel {} in guild {:?} : {e:?}",

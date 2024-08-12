@@ -1,4 +1,5 @@
-use crate::{bot::sessions::ActiveSession, db_connection::DbConnection, errors::HelibotError};
+use crate::models::sessions::ActiveSession;
+use crate::{db_connection::DbConnection, errors::HelibotError};
 
 use serenity::all::{Context, GuildId, UserId};
 use sqlx::{types::time::OffsetDateTime, MySql, Pool};

@@ -4,8 +4,8 @@ use serenity::prelude::TypeMapKey;
 use config::{Config, Environment, File};
 
 use crate::{
-    bot::roles::Seuil,
     errors::{EnvVarError, HelibotError},
+    managers::roles::Seuil,
 };
 
 #[derive(Debug, Deserialize)]
