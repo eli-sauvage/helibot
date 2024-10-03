@@ -1,0 +1,4 @@
+add guild roles when bot joins a new guild -> cmd
+poll cmd
+display old score when "print_all" pressed
+refacor/clean codebase

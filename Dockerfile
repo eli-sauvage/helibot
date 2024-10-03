@@ -1,16 +1,23 @@
-FROM node:16
+FROM rust:1-bookworm AS builder
 
-WORKDIR /helibot
+ENV SQLX_OFFLINE true
 
-COPY package*.json ./
+WORKDIR /app/helibot/
 
-RUN npm i
-RUN npm i -g typescript
+COPY Cargo.toml Cargo.toml
+COPY src/ src/
 
-COPY ./ ./
+#/!\ please make sure to run `cargo sqlx prepare` before
+COPY .sqlx .sqlx
+COPY migrations migrations
 
-RUN tsc
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/app/helibot/target \
+    cargo install --path .
 
-EXPOSE 2832
+FROM debian:bookworm-slim
 
-CMD ["node", "out/main.js"]
+COPY --from=builder /usr/local/cargo/bin/helibot /usr/local/bin/helibot
+
+CMD ["helibot"]
+

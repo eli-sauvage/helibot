@@ -1,13 +1,9 @@
 .env 
-token.ts
-node_modules/
-package-lock.json
-save.json
-save/
-ssl/
-.vscode/*
-saves/
-TODO
-out
-test.sh
-ecosystem.config.js
+compose.override.yml
+
+# Added by cargo
+
+/target
+
+#because this is a binary
+Cargo.lock

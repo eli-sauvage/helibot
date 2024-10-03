@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "UPDATE Points SET points=? WHERE id=?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "ad427f9dff8d291bd8489ac2d3ec85021d9c92d0f656a98790c394bd6e2f100a"
+}

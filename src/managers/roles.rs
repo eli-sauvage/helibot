@@ -1,0 +1,240 @@
+use serde::Deserialize;
+use serenity::{
+    all::{Context, EditRole, GuildId, Member, Role, UserId},
+    prelude::TypeMapKey,
+};
+use sqlx::{MySql, Pool};
+use std::collections::HashMap;
+use tokio::sync::{RwLock, Semaphore};
+
+use crate::{db_connection::DbConnection, errors::HelibotError};
+
+use crate::models::points::{self, Point};
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Seuil {
+    pub seuil: u32,
+    pub role_name: String,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+struct RoleWithSeuil {
+    role: Role,
+    seuil: u32,
+}
+pub struct RoleManager {
+    seuils: Vec<Seuil>,
+    roles: RwLock<HashMap<GuildId, Vec<RoleWithSeuil>>>,
+    currently_updating: HashMap<GuildId, Semaphore>,
+}
+impl TypeMapKey for RoleManager {
+    type Value = RoleManager;
+}
+
+impl RoleManager {
+    pub async fn new(ctx: &Context, guild_ids: &Vec<GuildId>, seuils: Vec<Seuil>) -> Self {
+        let mut roles: HashMap<GuildId, Vec<RoleWithSeuil>> = HashMap::new();
+
+        for guild_id in guild_ids {
+            let guild = match guild_id.to_partial_guild(ctx).await {
+                Ok(guild) => guild,
+                Err(err) => {
+                    eprintln!(
+                        "could not find guild {}, roles won't be updated for this guild : {err:?}",
+                        guild_id
+                    );
+                    roles.insert(guild_id.to_owned(), vec![]);
+                    continue;
+                }
+            };
+            let mut roles_for_guild: Vec<RoleWithSeuil> = vec![];
+            for seuil in &seuils {
+                if let Some(r) = guild.role_by_name(&seuil.role_name) {
+                    roles_for_guild.push(RoleWithSeuil {
+                        role: r.to_owned(),
+                        seuil: seuil.seuil,
+                    });
+                } else {
+                    let r = EditRole::new().name(seuil.role_name.to_owned());
+                    match guild.create_role(ctx, r).await {
+                        Ok(new_role) => {
+                            println!(
+                                "created new role {} for guild {}<{}>",
+                                seuil.role_name, guild.name, guild_id
+                            );
+                            roles_for_guild.push(RoleWithSeuil {
+                                role: new_role,
+                                seuil: seuil.seuil,
+                            });
+                        }
+                        Err(err) => {
+                            eprintln!(
+                                "could not create new role {} for guild {}<{}> : {err:?}",
+                                seuil.role_name, guild.name, guild_id
+                            );
+                        }
+                    }
+                }
+            }
+            roles.insert(guild_id.to_owned(), roles_for_guild);
+        }
+
+        println!(
+            "\t instanciate role w/ seuils : {}",
+            seuils
+                .iter()
+                .map(|s| format!("{}:{}", s.role_name, s.seuil))
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
+
+        let currently_updating = HashMap::from_iter(
+            guild_ids
+                .iter()
+                .map(|gid| (gid.to_owned(), Semaphore::new(1))),
+        );
+
+        RoleManager {
+            seuils,
+            roles: RwLock::new(roles),
+            currently_updating,
+        }
+    }
+
+    async fn get_roles_for_guild(
+        &self,
+        ctx: &Context,
+        guild_id: &GuildId,
+    ) -> Result<Vec<RoleWithSeuil>, HelibotError> {
+        if let Some(roles) = self.roles.read().await.get(guild_id) {
+            Ok(roles.to_vec())
+        } else {
+            let guild = guild_id.to_partial_guild(ctx).await?;
+            let mut roles_for_guild: Vec<RoleWithSeuil> = vec![];
+            for seuil in &self.seuils {
+                if let Some(r) = guild.role_by_name(&seuil.role_name) {
+                    roles_for_guild.push(RoleWithSeuil {
+                        role: r.to_owned(),
+                        seuil: seuil.seuil,
+                    });
+                } else {
+                    let r = EditRole::new().name(seuil.role_name.to_owned());
+                    roles_for_guild.push(RoleWithSeuil {
+                        role: guild.create_role(ctx, r).await?,
+                        seuil: seuil.seuil,
+                    });
+                }
+            }
+            let mut roles = self.roles.write().await;
+            roles.insert(guild_id.to_owned(), roles_for_guild.clone());
+            Ok(roles_for_guild)
+        }
+    }
+
+    pub fn get_seuils(&self) -> &Vec<Seuil> {
+        &self.seuils
+    }
+
+    pub async fn check_role_for_every_user_in_guild(
+        &self,
+        ctx: &Context,
+        guild_id: &GuildId,
+    ) -> Result<(), HelibotError> {
+        let permit = match self
+            .currently_updating
+            .get(guild_id)
+            .map(|s| s.try_acquire())
+        {
+            Some(Ok(permit)) => permit,
+            _ => {
+                println!("skipping role check bc another on is running");
+                return Ok(());
+            }
+        };
+        let guild = guild_id.to_partial_guild(&ctx).await?;
+        let members = guild.members(&ctx, None, None).await?;
+        let helibot_roles = self.get_roles_for_guild(ctx, guild_id).await?;
+        let guild = guild_id.to_partial_guild(&ctx).await?;
+
+        let client_data = ctx.data.read().await;
+        let pool = client_data.get::<DbConnection>().unwrap();
+
+        let points = points::get_points_for_guild(ctx, pool, guild_id).await?;
+
+        for member in members {
+            if let Some(point) = points.iter().find(|p| p.user_id == member.user.id.get()) {
+                self.check_role_for_user(ctx, &helibot_roles, &member, point)
+                    .await?;
+                println!("checked role for {} in {}", member.user.name, guild.name);
+            }
+        }
+
+        drop(permit);
+        Ok(())
+    }
+    pub async fn check_role_for_single_user(
+        &self,
+        ctx: &Context,
+        pool: &Pool<MySql>,
+        user_id: &UserId,
+        guild_id: &GuildId,
+    ) -> Result<(), HelibotError> {
+        let helibot_roles = self.get_roles_for_guild(ctx, guild_id).await?;
+        let guild = guild_id.to_partial_guild(&ctx).await?;
+        let member = guild.member(&ctx, user_id).await?;
+        if let Some(ref point) = points::get_points_for_user(pool, user_id, guild_id).await? {
+            self.check_role_for_user(ctx, &helibot_roles, &member, point)
+                .await?;
+        }
+        Ok(())
+    }
+    async fn check_role_for_user(
+        &self,
+        ctx: &Context,
+        helibot_roles: &[RoleWithSeuil],
+        member: &Member,
+        point: &Point,
+    ) -> Result<(), HelibotError> {
+        if helibot_roles.is_empty() {
+            return Ok(());
+        }
+
+        let roles_user: Vec<&RoleWithSeuil> = member
+            .roles
+            .iter()
+            .filter_map(|r| {
+                helibot_roles
+                    .iter()
+                    .find(|role_seuil| &role_seuil.role.id == r)
+            })
+            .collect();
+
+        let computed_role = helibot_roles
+            .iter()
+            .reduce(|acc, role| {
+                if point.points >= role.seuil * 60 {
+                    role
+                } else {
+                    acc
+                }
+            })
+            .unwrap();
+
+        for role_to_remove in roles_user.iter().filter(|r| **r != computed_role) {
+            member.remove_role(&ctx, role_to_remove.role.id).await?;
+            println!(
+                "removed role {} for user {:?}",
+                role_to_remove.role.name, &member.user.name
+            );
+        }
+        if !roles_user.contains(&computed_role) {
+            member.add_role(&ctx, computed_role.role.id).await?;
+            println!(
+                "added role {} for user {:?}",
+                computed_role.role.name, &member.user.name
+            );
+        }
+
+        Ok(())
+    }
+}

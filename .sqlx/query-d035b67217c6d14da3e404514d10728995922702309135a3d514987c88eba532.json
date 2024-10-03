@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "UPDATE Points SET username=? WHERE user_id=? AND guild_id=?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "d035b67217c6d14da3e404514d10728995922702309135a3d514987c88eba532"
+}
