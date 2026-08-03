@@ -47,8 +47,12 @@ async fn run() -> Result<()> {
 
     // Only non-privileged intents. Requesting a privileged one that is not enabled in
     // the developer portal makes the gateway refuse the connection outright, so member
-    // lists are fetched over HTTP instead.
-    let intents = GatewayIntents::GUILDS | GatewayIntents::GUILD_VOICE_STATES;
+    // lists are fetched over HTTP instead. GUILD_MESSAGES carries the deletion events
+    // that tell the bot its board is gone; it does not include message content, which is
+    // the privileged part.
+    let intents = GatewayIntents::GUILDS
+        | GatewayIntents::GUILD_VOICE_STATES
+        | GatewayIntents::GUILD_MESSAGES;
 
     let mut client = Client::builder(&state.config.discord_token, intents)
         .event_handler(Handler::new(state.clone()))

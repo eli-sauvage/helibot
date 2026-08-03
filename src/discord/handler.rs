@@ -1,7 +1,9 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-use serenity::all::{Context, EventHandler, Guild, GuildId, Ready, UserId, VoiceState};
+use serenity::all::{
+    ChannelId, Context, EventHandler, Guild, GuildId, MessageId, Ready, UserId, VoiceState,
+};
 use serenity::async_trait;
 use tracing::{info, warn};
 
@@ -70,6 +72,47 @@ impl EventHandler for Handler {
                 warn!(guild_id = guild_id.get(), error = %err, "could not refresh the board");
             }
         });
+    }
+
+    /// The board is meant to be permanent, so deleting it asks for a new one.
+    async fn message_delete(
+        &self,
+        ctx: Context,
+        channel_id: ChannelId,
+        deleted_message_id: MessageId,
+        guild_id: Option<GuildId>,
+    ) {
+        let Some(guild_id) = guild_id else {
+            return;
+        };
+        leaderboard::repost_if_deleted(
+            &self.state,
+            &ctx,
+            guild_id,
+            channel_id,
+            &[deleted_message_id],
+        )
+        .await;
+    }
+
+    async fn message_delete_bulk(
+        &self,
+        ctx: Context,
+        channel_id: ChannelId,
+        deleted_message_ids: Vec<MessageId>,
+        guild_id: Option<GuildId>,
+    ) {
+        let Some(guild_id) = guild_id else {
+            return;
+        };
+        leaderboard::repost_if_deleted(
+            &self.state,
+            &ctx,
+            guild_id,
+            channel_id,
+            &deleted_message_ids,
+        )
+        .await;
     }
 
     async fn voice_state_update(&self, ctx: Context, _old: Option<VoiceState>, new: VoiceState) {

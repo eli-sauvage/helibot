@@ -1,6 +1,6 @@
 use serenity::all::{
     ChannelId, Context, CreateEmbed, CreateEmbedFooter, CreateMessage, EditMessage, GetMessages,
-    GuildId, Timestamp,
+    GuildId, MessageId, Timestamp,
 };
 use tracing::{debug, info, warn};
 
@@ -34,7 +34,14 @@ async fn resolve_channel(state: &AppState, ctx: &Context, guild_id: GuildId) -> 
 
 /// Rebuilds the board and edits the existing message, posting a new one only if the edit
 /// fails or nothing has been posted yet.
+///
+/// The channel must end up holding exactly one message. Refreshes are serialised per
+/// guild because several of them start at once: `guild_create` triggers one, and the
+/// refresh loop's first tick fires immediately. Running concurrently, both would find no
+/// board recorded and both would post.
 pub async fn refresh(state: &AppState, ctx: &Context, guild_id: GuildId) -> Result<()> {
+    let _permit = state.sweep("board", guild_id).await;
+
     let channel_id = resolve_channel(state, ctx, guild_id).await?;
 
     let now = db::now(&state.db).await?;
@@ -105,7 +112,7 @@ pub async fn refresh(state: &AppState, ctx: &Context, guild_id: GuildId) -> Resu
         }
     }
 
-    delete_own_messages(ctx, channel_id).await;
+    claim_channel(ctx, channel_id).await;
 
     let message = channel_id
         .send_message(ctx, CreateMessage::new().embed(embed))
@@ -153,25 +160,86 @@ fn build_embed(state: &AppState, fields: Vec<(String, String, bool)>) -> CreateE
         .timestamp(Timestamp::now())
 }
 
-/// Clears boards left by earlier runs so the channel does not accumulate dead messages.
-async fn delete_own_messages(ctx: &Context, channel_id: ChannelId) {
-    let messages = match channel_id.messages(ctx, GetMessages::new()).await {
-        Ok(messages) => messages,
-        Err(err) => {
-            warn!(channel_id = channel_id.get(), error = %err, "could not list old messages");
+/// Puts a new board back after the old one is deleted, so the channel is never left
+/// empty. Ignores anything that is not the message currently being maintained —
+/// including the bot's own housekeeping deletions.
+pub async fn repost_if_deleted(
+    state: &AppState,
+    ctx: &Context,
+    guild_id: GuildId,
+    channel_id: ChannelId,
+    deleted: &[MessageId],
+) {
+    let Some(board) = state.board(guild_id).await else {
+        return;
+    };
+    if board.channel_id != channel_id || !deleted.contains(&board.message_id) {
+        return;
+    }
+
+    info!(
+        guild_id = guild_id.get(),
+        message_id = board.message_id.get(),
+        "board was deleted, posting a new one"
+    );
+    state.forget_board(guild_id).await;
+
+    if let Err(err) = refresh(state, ctx, guild_id).await {
+        warn!(guild_id = guild_id.get(), error = %err, "could not repost the board");
+    }
+}
+
+/// Empties the board channel before a new board is posted.
+///
+/// The channel is dedicated to this one message, so anything else in it — boards from
+/// earlier runs, a duplicate from a concurrent post — is cleared rather than left to
+/// accumulate.
+async fn claim_channel(ctx: &Context, channel_id: ChannelId) {
+    loop {
+        let messages = match channel_id
+            .messages(ctx, GetMessages::new().limit(100))
+            .await
+        {
+            Ok(messages) => messages,
+            Err(err) => {
+                warn!(channel_id = channel_id.get(), error = %err, "could not list old messages");
+                return;
+            }
+        };
+
+        if messages.is_empty() {
             return;
         }
-    };
 
-    let me = ctx.cache.current_user().id;
-    for message in messages.iter().filter(|message| message.author.id == me) {
-        if let Err(err) = message.delete(ctx).await {
-            warn!(
-                channel_id = channel_id.get(),
-                message_id = message.id.get(),
-                error = %err,
-                "could not delete an old board"
-            );
+        let ids: Vec<MessageId> = messages.iter().map(|message| message.id).collect();
+        let batch = ids.len();
+
+        // Bulk delete needs at least two messages and refuses anything older than two
+        // weeks, so both of those cases fall back to deleting one at a time.
+        let bulk = if batch > 1 {
+            channel_id.delete_messages(ctx, &ids).await
+        } else {
+            channel_id.delete_message(ctx, ids[0]).await
+        };
+
+        if let Err(err) = bulk {
+            debug!(channel_id = channel_id.get(), error = %err, "bulk delete refused, deleting individually");
+            for id in ids {
+                if let Err(err) = channel_id.delete_message(ctx, id).await {
+                    warn!(
+                        channel_id = channel_id.get(),
+                        message_id = id.get(),
+                        error = %err,
+                        "could not delete an old message"
+                    );
+                    return;
+                }
+            }
+        }
+
+        // A short page means the channel is now empty.
+        if batch < 100 {
+            return;
         }
     }
 }

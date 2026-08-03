@@ -35,10 +35,16 @@ reconciliation in detail).
 
 ### Discord permissions
 
-The bot connects with the non-privileged `GUILDS` and `GUILD_VOICE_STATES` intents only.
+The bot connects with the non-privileged `GUILDS`, `GUILD_VOICE_STATES` and
+`GUILD_MESSAGES` intents only — the last one delivers the deletion events that tell it
+the board is gone, and does not include message content, which is the privileged part.
 Adding a privileged intent that is not enabled in the developer portal makes the gateway
 refuse the connection outright, so member lists are fetched over HTTP instead. It needs
-**Manage Roles** for the ladder, and its own role must sit above every ladder role.
+**Manage Roles** for the ladder, and **Manage Messages** in the points channel so it can
+clear it.
+
+The points channel is treated as dedicated to the board: whenever a new board is posted,
+everything already in the channel is deleted first.
 
 ## Running it
 
