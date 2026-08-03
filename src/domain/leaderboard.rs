@@ -53,6 +53,44 @@ fn minutes(points_seconds: u64) -> String {
     (points_seconds / 60).to_string()
 }
 
+const SCORE_HEADER: &str = "Score";
+const NAME_HEADER: &str = "User Name";
+
+/// The whole board as a plain-text table, for the scores attachment. Unlike the embed
+/// this is not truncated — showing everyone is the point of it.
+pub fn table(rows: &[Row]) -> String {
+    let score_width = rows
+        .iter()
+        .map(|row| minutes(row.points_seconds).len())
+        .chain(std::iter::once(SCORE_HEADER.len()))
+        .max()
+        .unwrap_or(SCORE_HEADER.len());
+
+    let name_width = rows
+        .iter()
+        .map(|row| row.username.chars().count())
+        .chain(std::iter::once(NAME_HEADER.len()))
+        .max()
+        .unwrap_or(NAME_HEADER.len());
+
+    let mut table = format!("{SCORE_HEADER:<score_width$} | {NAME_HEADER}\n");
+    table.push_str(&format!(
+        "{}-+-{}\n",
+        "-".repeat(score_width),
+        "-".repeat(name_width)
+    ));
+
+    for row in rows {
+        table.push_str(&format!(
+            "{:<score_width$} | {}\n",
+            minutes(row.points_seconds),
+            row.username
+        ));
+    }
+
+    table
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -117,5 +155,41 @@ mod tests {
     #[test]
     fn an_empty_board_produces_no_fields() {
         assert!(fields(&[]).is_empty());
+    }
+
+    #[test]
+    fn the_table_lists_everyone_not_just_the_top() {
+        let table = table(&rows(40));
+        let lines = table.lines().count();
+        // 40 members plus the header and its rule.
+        assert_eq!(lines, 42);
+        assert!(table.contains("user39"));
+    }
+
+    #[test]
+    fn the_table_aligns_the_score_column() {
+        let rows = [
+            Row {
+                username: "long name".to_owned(),
+                points_seconds: 100 * 60,
+                connected: false,
+            },
+            Row {
+                username: "b".to_owned(),
+                points_seconds: 60,
+                connected: false,
+            },
+        ];
+        let table = table(&rows);
+        let lines: Vec<&str> = table.lines().collect();
+        assert_eq!(lines[0], "Score | User Name");
+        assert_eq!(lines[1], "------+----------");
+        assert_eq!(lines[2], "100   | long name");
+        assert_eq!(lines[3], "1     | b");
+    }
+
+    #[test]
+    fn an_empty_table_still_has_its_header() {
+        assert_eq!(table(&[]), "Score | User Name\n------+----------\n");
     }
 }

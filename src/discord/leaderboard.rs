@@ -1,11 +1,11 @@
 use serenity::all::{
-    ChannelId, Context, CreateEmbed, CreateEmbedFooter, CreateMessage, EditMessage, GetMessages,
-    GuildId, MessageId, Timestamp,
+    ChannelId, Context, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter,
+    CreateMessage, EditMessage, GetMessages, GuildId, MessageId, ReactionType, Timestamp,
 };
 use tracing::{debug, info, warn};
 
 use crate::db::{self, points};
-use crate::domain::leaderboard::{fields, Row, TOP_N};
+use crate::domain::leaderboard::{fields, table, Row, TOP_N};
 use crate::error::{Error, Result};
 use crate::state::{AppState, PostedBoard};
 
@@ -43,31 +43,7 @@ pub async fn refresh(state: &AppState, ctx: &Context, guild_id: GuildId) -> Resu
     let _permit = state.sweep("board", guild_id).await;
 
     let channel_id = resolve_channel(state, ctx, guild_id).await?;
-
-    let now = db::now(&state.db).await?;
-    let mut standings = points::standings(&state.db, guild_id.get(), now).await?;
-
-    // Hide people who have left the guild, when a member list is known. It is refreshed
-    // by the username sweep rather than fetched here, so the board costs no member
-    // request of its own.
-    if let Some(members) = state.cached_members(guild_id).await {
-        standings.retain(|standing| members.contains(&standing.user_id));
-    }
-
-    standings.sort_by(|a, b| {
-        b.points_seconds
-            .cmp(&a.points_seconds)
-            .then_with(|| a.username.cmp(&b.username))
-    });
-
-    let rows: Vec<Row> = standings
-        .into_iter()
-        .map(|standing| Row {
-            username: standing.username,
-            points_seconds: standing.points_seconds,
-            connected: standing.connected,
-        })
-        .collect();
+    let rows = rows_for(state, guild_id).await?;
 
     let fields = fields(&rows);
     let embed = build_embed(state, fields.clone());
@@ -83,7 +59,9 @@ pub async fn refresh(state: &AppState, ctx: &Context, guild_id: GuildId) -> Resu
             .edit_message(
                 ctx,
                 board.message_id,
-                EditMessage::new().embed(embed.clone()),
+                EditMessage::new()
+                    .embed(embed.clone())
+                    .components(buttons()),
             )
             .await;
 
@@ -115,7 +93,7 @@ pub async fn refresh(state: &AppState, ctx: &Context, guild_id: GuildId) -> Resu
     claim_channel(ctx, channel_id).await;
 
     let message = channel_id
-        .send_message(ctx, CreateMessage::new().embed(embed))
+        .send_message(ctx, CreateMessage::new().embed(embed).components(buttons()))
         .await?;
 
     state
@@ -135,6 +113,58 @@ pub async fn refresh(state: &AppState, ctx: &Context, guild_id: GuildId) -> Resu
         "posted a new board"
     );
     Ok(())
+}
+
+/// Custom ids of the buttons carried by the board.
+pub const REFRESH_BUTTON: &str = "refresh";
+pub const SCORES_BUTTON: &str = "print_all";
+
+fn buttons() -> Vec<CreateActionRow> {
+    let mut refresh = CreateButton::new(REFRESH_BUTTON).label("refresh");
+    if let Ok(emoji) = ReactionType::try_from("🔄") {
+        refresh = refresh.emoji(emoji);
+    }
+
+    let mut scores = CreateButton::new(SCORES_BUTTON).label("afficher tous les scores");
+    if let Ok(emoji) = ReactionType::try_from("📜") {
+        scores = scores.emoji(emoji);
+    }
+
+    vec![CreateActionRow::Buttons(vec![refresh, scores])]
+}
+
+/// The current standings, filtered and ordered the way the board shows them. Shared so
+/// the embed and the full table can never disagree.
+async fn rows_for(state: &AppState, guild_id: GuildId) -> Result<Vec<Row>> {
+    let now = db::now(&state.db).await?;
+    let mut standings = points::standings(&state.db, guild_id.get(), now).await?;
+
+    // Hide people who have left the guild, when a member list is known. It is refreshed
+    // by the username sweep rather than fetched here, so the board costs no member
+    // request of its own.
+    if let Some(members) = state.cached_members(guild_id).await {
+        standings.retain(|standing| members.contains(&standing.user_id));
+    }
+
+    standings.sort_by(|a, b| {
+        b.points_seconds
+            .cmp(&a.points_seconds)
+            .then_with(|| a.username.cmp(&b.username))
+    });
+
+    Ok(standings
+        .into_iter()
+        .map(|standing| Row {
+            username: standing.username,
+            points_seconds: standing.points_seconds,
+            connected: standing.connected,
+        })
+        .collect())
+}
+
+/// Every member's score as a plain-text table, for the scores button.
+pub async fn full_table(state: &AppState, guild_id: GuildId) -> Result<String> {
+    Ok(table(&rows_for(state, guild_id).await?))
 }
 
 fn build_embed(state: &AppState, fields: Vec<(String, String, bool)>) -> CreateEmbed {

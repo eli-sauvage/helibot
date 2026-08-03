@@ -2,10 +2,12 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use serenity::all::{
-    ChannelId, Context, EventHandler, Guild, GuildId, MessageId, Ready, UserId, VoiceState,
+    ChannelId, Context, CreateAttachment, CreateInteractionResponse,
+    CreateInteractionResponseFollowup, CreateInteractionResponseMessage, EventHandler, Guild,
+    GuildId, Interaction, MessageId, Ready, UserId, VoiceState,
 };
 use serenity::async_trait;
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 use crate::discord::{leaderboard, roles, usernames, voice};
 use crate::state::AppState;
@@ -72,6 +74,77 @@ impl EventHandler for Handler {
                 warn!(guild_id = guild_id.get(), error = %err, "could not refresh the board");
             }
         });
+    }
+
+    /// Discord invalidates an interaction token after three seconds, so every branch
+    /// here answers first and works afterwards. The previous version ran a full refresh
+    /// before responding and then called `.unwrap()` on the expired response, which
+    /// panicked and left the buttons looking dead.
+    async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
+        let Interaction::Component(component) = interaction else {
+            return;
+        };
+        let Some(guild_id) = component.guild_id else {
+            return;
+        };
+
+        match component.data.custom_id.as_str() {
+            leaderboard::REFRESH_BUTTON => {
+                // "Acknowledge" tells Discord an edit to this message is coming.
+                if let Err(err) = component
+                    .create_response(&ctx, CreateInteractionResponse::Acknowledge)
+                    .await
+                {
+                    warn!(guild_id = guild_id.get(), error = %err, "could not acknowledge refresh");
+                    return;
+                }
+
+                let state = self.state.clone();
+                tokio::spawn(async move {
+                    if let Err(err) = leaderboard::refresh(&state, &ctx, guild_id).await {
+                        warn!(guild_id = guild_id.get(), error = %err, "manual refresh failed");
+                    }
+                    if let Err(err) = roles::sync_guild(&state, &ctx, guild_id).await {
+                        warn!(guild_id = guild_id.get(), error = %err, "role sweep failed");
+                    }
+                    if let Err(err) = usernames::sync_guild(&state, &ctx, guild_id).await {
+                        warn!(guild_id = guild_id.get(), error = %err, "username sweep failed");
+                    }
+                });
+            }
+
+            leaderboard::SCORES_BUTTON => {
+                // Deferred, so the upload does not have to fit in the three seconds.
+                let defer = CreateInteractionResponse::Defer(
+                    CreateInteractionResponseMessage::new().ephemeral(true),
+                );
+                if let Err(err) = component.create_response(&ctx, defer).await {
+                    warn!(guild_id = guild_id.get(), error = %err, "could not defer scores");
+                    return;
+                }
+
+                let state = self.state.clone();
+                tokio::spawn(async move {
+                    let followup = match leaderboard::full_table(&state, guild_id).await {
+                        Ok(table) => CreateInteractionResponseFollowup::new()
+                            .ephemeral(true)
+                            .add_file(CreateAttachment::bytes(table.into_bytes(), "scores.txt")),
+                        Err(err) => {
+                            warn!(guild_id = guild_id.get(), error = %err, "could not build the scores table");
+                            CreateInteractionResponseFollowup::new()
+                                .ephemeral(true)
+                                .content("Les scores n'ont pas pu être récupérés.")
+                        }
+                    };
+
+                    if let Err(err) = component.create_followup(&ctx, followup).await {
+                        warn!(guild_id = guild_id.get(), error = %err, "could not send the scores");
+                    }
+                });
+            }
+
+            other => debug!(custom_id = other, "unknown component"),
+        }
     }
 
     /// The board is meant to be permanent, so deleting it asks for a new one.

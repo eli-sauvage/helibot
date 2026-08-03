@@ -9,7 +9,11 @@ channel with someone else earns one point, and points move members up a ladder o
   other eligible member**. Bots, and anyone muted or deafened (by themselves or by the
   server), are ignored — and do not count towards the two needed to earn.
 - **Leaderboard.** One self-maintaining message per guild, in the configured channel,
-  refreshed on a timer. Shows the top 15 with connected members underlined.
+  refreshed on a timer. Shows the top 15 with connected members underlined. Two buttons
+  sit under it: **refresh**, which re-renders the board and re-runs the role and username
+  sweeps, and **afficher tous les scores**, which replies privately with every score as a
+  `scores.txt` attachment. Both answer Discord inside its three-second interaction
+  deadline and do the work afterwards.
 - **Role ladder.** Every member holds exactly one role: the highest tier their score has
   reached. Missing roles are created when the bot joins a guild.
 - **Usernames.** Stored names are kept in step with nicknames, and accounts that no
