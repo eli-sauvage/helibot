@@ -1,5 +1,21 @@
+# Fallback used for guilds with no points_channel_id below. Resolving by name breaks
+# silently the day the channel is renamed, so prefer an id.
 point_channel_name = "points-test-test"
 
+# How often the board and the role ladder are refreshed.
+refresh_interval_secs = 180
+# How often open sessions are banked. Also the most voice time an unclean shutdown can
+# cost.
+credit_interval_secs = 60
+# How often stored usernames are reconciled with Discord.
+username_refresh_interval_secs = 3600
+
+# Preferred way to point the bot at a channel. One block per guild.
+# [[guilds]]
+# id = 000000000000000000
+# points_channel_id = 000000000000000000
+
+# Thresholds are in minutes of voice time; points are stored in seconds.
 [[roles]]
 seuil = 0
 role_name = "Les Subalternes Obscurs"

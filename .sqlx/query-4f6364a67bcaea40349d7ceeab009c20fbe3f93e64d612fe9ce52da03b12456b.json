@@ -1,0 +1,24 @@
+{
+  "db_name": "MySQL",
+  "query": "SELECT points FROM Points WHERE user_id = ? AND guild_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "points",
+        "type_info": {
+          "type": "Long",
+          "flags": "NOT_NULL | UNSIGNED | NO_DEFAULT_VALUE",
+          "max_size": 10
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "4f6364a67bcaea40349d7ceeab009c20fbe3f93e64d612fe9ce52da03b12456b"
+}

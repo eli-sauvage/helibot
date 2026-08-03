@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n        INSERT INTO SessionHistory (user_id, guild_id, started_at, ended_at, session_seconds, total_points_after)\n        SELECT a.user_id,\n               a.guild_id,\n               a.started_at,\n               a.last_credited_at,\n               GREATEST(TIMESTAMPDIFF(SECOND, a.started_at, a.last_credited_at), 0),\n               COALESCE(p.points, 0)\n          FROM ActiveSessions a\n          LEFT JOIN Points p\n                 ON p.user_id = a.user_id AND p.guild_id = a.guild_id\n         WHERE a.last_credited_at > a.started_at\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "b1dd57eee1e271c00d36838f6044c695d3683249d019cc092fd3231b3487e57a"
+}

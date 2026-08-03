@@ -1,0 +1,24 @@
+{
+  "db_name": "MySQL",
+  "query": "SELECT CURRENT_TIMESTAMP AS \"now!: DbTime\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "now!: DbTime",
+        "type_info": {
+          "type": "Datetime",
+          "flags": "NOT_NULL | BINARY",
+          "max_size": 19
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "9dcd44e55eb6d3d606ae50d6350d1c317542fc61092096799d7c15b2444474ef"
+}

@@ -1,4 +1,11 @@
-add guild roles when bot joins a new guild -> cmd
-poll cmd
-display old score when "print_all" pressed
-refacor/clean codebase
+done in the rewrite:
+- add guild roles when bot joins a new guild (guild_create sets up the ladder)
+- refacor/clean codebase
+
+not carried over, rebuild as slash commands if wanted:
+- refresh button -> /refresh (defer first, the work is well past the 3s deadline)
+- print_all button -> /scores, uploading the full table
+- display old score (Points.score_historique) next to the current one when printing all
+
+never built:
+- poll cmd

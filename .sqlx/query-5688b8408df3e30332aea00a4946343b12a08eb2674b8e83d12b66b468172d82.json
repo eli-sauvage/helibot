@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "INSERT IGNORE INTO ActiveSessions (user_id, guild_id, started_at, last_credited_at) VALUES (?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "5688b8408df3e30332aea00a4946343b12a08eb2674b8e83d12b66b468172d82"
+}

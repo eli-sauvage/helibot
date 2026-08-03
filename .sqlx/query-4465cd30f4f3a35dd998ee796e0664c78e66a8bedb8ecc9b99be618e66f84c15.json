@@ -1,0 +1,54 @@
+{
+  "db_name": "MySQL",
+  "query": "\n        SELECT p.user_id,\n               p.username,\n               CAST(p.points + COALESCE(GREATEST(TIMESTAMPDIFF(SECOND, a.last_credited_at, ?), 0), 0) AS UNSIGNED) AS \"points_seconds!: u64\",\n               a.id AS \"session_id?: u32\"\n        FROM Points p\n        LEFT JOIN ActiveSessions a\n               ON a.user_id = p.user_id AND a.guild_id = p.guild_id\n        WHERE p.guild_id = ?\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | MULTIPLE_KEY | UNSIGNED | NO_DEFAULT_VALUE",
+          "max_size": 20
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "username",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "max_size": 1020
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "points_seconds!: u64",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | UNSIGNED | BINARY",
+          "max_size": 21
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "session_id?: u32",
+        "type_info": {
+          "type": "Long",
+          "flags": "PRIMARY_KEY | UNSIGNED | AUTO_INCREMENT",
+          "max_size": 10
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "4465cd30f4f3a35dd998ee796e0664c78e66a8bedb8ecc9b99be618e66f84c15"
+}

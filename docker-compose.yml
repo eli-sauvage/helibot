@@ -12,6 +12,7 @@ services:
       test: ["CMD", "/usr/local/bin/healthcheck.sh", "--connect"]
       retries: 10
       interval: 5s
+    restart: unless-stopped
     networks:
       - helibot
   helibot:
@@ -19,14 +20,16 @@ services:
       context: .
       dockerfile: ./Dockerfile
     volumes:
-      - .env:/.env
-      - ./helibot.toml:/helibot.toml
+      # The bot reads /.env and /helibot.toml from its working directory, which is /.
+      - .env:/.env:ro
+      - ./helibot.toml:/helibot.toml:ro
     image: ${DOCKER_IMAGE_URL_BASE}helibot:latest
     environment:
-      - MARIADB_HOST=db
+      - RUST_LOG=${RUST_LOG:-info}
     depends_on:
       db:
         condition: service_healthy
+    restart: unless-stopped
     networks:
       - helibot
 

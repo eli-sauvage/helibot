@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n        UPDATE Points\n           SET points = points + GREATEST(TIMESTAMPDIFF(SECOND, ?, ?), 0)\n         WHERE user_id = ? AND guild_id = ?\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "67322462415d3dede47498c84e047f318eb114be271b1a185f2ff7226eaac38b"
+}

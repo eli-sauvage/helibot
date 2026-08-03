@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n        UPDATE Points p\n          JOIN ActiveSessions a\n            ON a.user_id = p.user_id AND a.guild_id = p.guild_id\n           SET p.points = p.points + GREATEST(TIMESTAMPDIFF(SECOND, a.last_credited_at, ?), 0)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "fb3247f7a583b156bc5a2301a64abcb7e97b1f82cf5c51f4b11215826c366aed"
+}

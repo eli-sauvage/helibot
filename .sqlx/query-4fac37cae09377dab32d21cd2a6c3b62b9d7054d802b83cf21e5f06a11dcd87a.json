@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n        INSERT INTO SessionHistory (user_id, guild_id, started_at, ended_at, session_seconds, total_points_after)\n        VALUES (?, ?, ?, ?, GREATEST(TIMESTAMPDIFF(SECOND, ?, ?), 0), ?)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "4fac37cae09377dab32d21cd2a6c3b62b9d7054d802b83cf21e5f06a11dcd87a"
+}

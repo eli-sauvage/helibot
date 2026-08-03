@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "UPDATE ActiveSessions SET last_credited_at = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "2826b8a9379b6436f505077dc4572301fbac9157fbed13463b3b022305735a6b"
+}

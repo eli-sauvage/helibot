@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "INSERT IGNORE INTO Points (user_id, guild_id, points, username) VALUES (?, ?, 0, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "b08288a437da28c5a95a3b31c461a16f97bbf48bd4e2cf1bd6ed95f77981fd54"
+}

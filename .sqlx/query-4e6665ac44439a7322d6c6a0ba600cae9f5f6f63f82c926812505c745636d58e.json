@@ -1,0 +1,24 @@
+{
+  "db_name": "MySQL",
+  "query": "\n        SELECT CAST(p.points + COALESCE(GREATEST(TIMESTAMPDIFF(SECOND, a.last_credited_at, ?), 0), 0) AS UNSIGNED) AS \"points_seconds!: u64\"\n        FROM Points p\n        LEFT JOIN ActiveSessions a\n               ON a.user_id = p.user_id AND a.guild_id = p.guild_id\n        WHERE p.user_id = ? AND p.guild_id = ?\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "points_seconds!: u64",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | UNSIGNED | BINARY",
+          "max_size": 21
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "4e6665ac44439a7322d6c6a0ba600cae9f5f6f63f82c926812505c745636d58e"
+}
